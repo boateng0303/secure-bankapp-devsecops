@@ -1,5 +1,5 @@
 # Multi-stage build for Angular
-FROM node:18-alpine AS build
+FROM node:22-slim AS build
 WORKDIR /app
 
 # Copy package files and install dependencies (cached layer)
@@ -11,7 +11,7 @@ COPY . .
 RUN npm run build -- --configuration production
 
 # Production stage with Nginx
-FROM nginx:1.25-alpine
+FROM gcr.io/distroless/nginx:latest
 WORKDIR /usr/share/nginx/html
 
 # Remove default nginx content
