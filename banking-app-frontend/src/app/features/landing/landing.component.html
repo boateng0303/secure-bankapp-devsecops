@@ -1,0 +1,129 @@
+<div class="min-h-screen bg-gradient-to-br from-primary-50 via-white to-accent-50">
+  <!-- Hero Section -->
+  <div class="relative overflow-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+      <div class="text-center animate-fadeIn">
+        <h1 class="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
+          Welcome to
+          <span class="bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent">
+            Secure Banking
+          </span>
+        </h1>
+        <p class="text-xl md:text-2xl text-gray-600 mb-10 max-w-3xl mx-auto">
+          Your trusted partner for secure, fast, and convenient online banking
+        </p>
+        
+        <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <a routerLink="/register" 
+             class="btn btn-primary btn-lg w-full sm:w-auto">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+            </svg>
+            Open an Account
+          </a>
+          <a routerLink="/login" 
+             class="btn btn-secondary btn-lg w-full sm:w-auto">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+            </svg>
+            Sign In
+          </a>
+        </div>
+      </div>
+
+      <!-- Hero Image/Illustration -->
+      <div class="mt-16 relative">
+        <div class="bg-gradient-to-r from-primary-100 to-accent-100 rounded-3xl p-8 shadow-soft-lg">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white rounded-2xl p-6 shadow-soft transform hover:scale-105 transition-transform duration-200">
+              <div class="bg-primary-50 w-12 h-12 rounded-xl flex items-center justify-center mb-4">
+                <svg class="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                </svg>
+              </div>
+              <h3 class="font-bold text-gray-900 mb-2">Multiple Accounts</h3>
+              <p class="text-sm text-gray-600">Checking, savings, and investment accounts</p>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 shadow-soft transform hover:scale-105 transition-transform duration-200">
+              <div class="bg-success-50 w-12 h-12 rounded-xl flex items-center justify-center mb-4">
+                <svg class="w-6 h-6 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+              </div>
+              <h3 class="font-bold text-gray-900 mb-2">Instant Transfers</h3>
+              <p class="text-sm text-gray-600">Send money in seconds</p>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 shadow-soft transform hover:scale-105 transition-transform duration-200">
+              <div class="bg-accent-50 w-12 h-12 rounded-xl flex items-center justify-center mb-4">
+                <svg class="w-6 h-6 text-accent-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
+              </div>
+              <h3 class="font-bold text-gray-900 mb-2">Bank-Level Security</h3>
+              <p class="text-sm text-gray-600">Your data is always protected</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Features Section -->
+  <div class="py-20 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16">
+        <h2 class="text-4xl font-bold text-gray-900 mb-4">Why Choose Us?</h2>
+        <p class="text-xl text-gray-600">Experience banking like never before</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div *ngFor="let feature of features" 
+             class="text-center p-8 rounded-2xl hover:bg-gray-50 transition-colors duration-200">
+          <div class="bg-gradient-to-br from-primary-50 to-accent-50 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <svg class="w-10 h-10 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path *ngIf="feature.icon === 'security'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+              <path *ngIf="feature.icon === 'speed'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+              <path *ngIf="feature.icon === 'account_balance_wallet'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <h3 class="text-2xl font-bold text-gray-900 mb-3">{{ feature.title }}</h3>
+          <p class="text-gray-600">{{ feature.description }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA Section -->
+  <div class="py-20 bg-gradient-to-br from-primary-600 to-primary-800">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <h2 class="text-4xl font-bold text-white mb-6">Ready to get started?</h2>
+      <p class="text-xl text-primary-100 mb-10">
+        Join thousands of satisfied customers who trust us with their banking needs
+      </p>
+      <a routerLink="/register" 
+         class="inline-flex items-center gap-3 px-8 py-4 bg-white text-primary-600 rounded-xl font-bold text-lg hover:bg-primary-50 transition-colors duration-200 shadow-lg hover:shadow-xl">
+        Get Started Today
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+        </svg>
+      </a>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="py-12 bg-gray-900">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <div class="flex items-center gap-3 mb-4 md:mb-0">
+          <svg class="w-8 h-8 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path>
+          </svg>
+          <span class="text-xl font-bold text-white">Secure Banking</span>
+        </div>
+        <p class="text-gray-400 text-sm">© 2024 Secure Banking. All rights reserved.</p>
+      </div>
+    </div>
+  </div>
+</div>

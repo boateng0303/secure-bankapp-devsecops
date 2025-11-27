@@ -1,0 +1,290 @@
+<div class="min-h-screen bg-gray-50 py-8">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Page Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900 flex items-center gap-3">
+        <svg class="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        Money Operations
+      </h1>
+      <p class="mt-1 text-gray-600">Manage deposits, transfers, and payments</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="bg-white rounded-xl shadow-soft mb-6">
+      <div class="border-b border-gray-200">
+        <nav class="flex -mb-px">
+          <button (click)="selectedTab = 0" 
+                  [class]="'flex-1 py-4 px-6 text-center border-b-2 font-medium transition-colors duration-200 ' + 
+                           (selectedTab === 0 ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300')">
+            <div class="flex items-center justify-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+              </svg>
+              <span>Deposit</span>
+            </div>
+          </button>
+          <button (click)="selectedTab = 1" 
+                  [class]="'flex-1 py-4 px-6 text-center border-b-2 font-medium transition-colors duration-200 ' + 
+                           (selectedTab === 1 ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300')">
+            <div class="flex items-center justify-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9-7-9-7-9 7 9 7z"></path>
+              </svg>
+              <span>Transfer</span>
+            </div>
+          </button>
+          <button (click)="selectedTab = 2" 
+                  [class]="'flex-1 py-4 px-6 text-center border-b-2 font-medium transition-colors duration-200 ' + 
+                           (selectedTab === 2 ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300')">
+            <div class="flex items-center justify-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+              </svg>
+              <span>Internal Transfer</span>
+            </div>
+          </button>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="bg-white rounded-xl shadow-soft p-8 animate-fadeIn">
+      <!-- Deposit Tab -->
+      <div *ngIf="selectedTab === 0">
+        <p class="text-gray-600 mb-6">Add funds to your account</p>
+        
+        <form [formGroup]="depositForm" (ngSubmit)="onDeposit()" class="space-y-6">
+          <div>
+            <label for="deposit-account" class="block text-sm font-medium text-gray-700 mb-2">Select Account</label>
+            <select id="deposit-account" formControlName="accountId" class="input">
+              <option value="">Choose an account</option>
+              <option *ngFor="let account of accounts" [value]="account.id">
+                {{ account.accountType }} - ****{{ account.accountNumber.slice(-4) }} (${{ account.balance | number:'1.2-2' }})
+              </option>
+            </select>
+            <p *ngIf="depositForm.get('accountId')?.invalid && depositForm.get('accountId')?.touched" 
+               class="mt-1 text-sm text-danger-600">Account is required</p>
+          </div>
+
+          <div>
+            <label for="deposit-amount" class="block text-sm font-medium text-gray-700 mb-2">Amount</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <span class="text-gray-500">$</span>
+              </div>
+              <input id="deposit-amount" type="number" step="0.01" formControlName="amount" 
+                     placeholder="0.00" class="input pl-8">
+            </div>
+            <p *ngIf="depositForm.get('amount')?.hasError('required') && depositForm.get('amount')?.touched" 
+               class="mt-1 text-sm text-danger-600">Amount is required</p>
+            <p *ngIf="depositForm.get('amount')?.hasError('min') && depositForm.get('amount')?.touched" 
+               class="mt-1 text-sm text-danger-600">Amount must be greater than 0</p>
+          </div>
+
+          <div>
+            <label for="deposit-method" class="block text-sm font-medium text-gray-700 mb-2">Deposit Method</label>
+            <select id="deposit-method" formControlName="depositMethod" class="input">
+              <option value="">Choose a method</option>
+              <option *ngFor="let method of depositMethods" [value]="method">
+                {{ method.replace('_', ' ') }}
+              </option>
+            </select>
+            <p *ngIf="depositForm.get('depositMethod')?.invalid && depositForm.get('depositMethod')?.touched" 
+               class="mt-1 text-sm text-danger-600">Deposit method is required</p>
+          </div>
+
+          <div>
+            <label for="deposit-description" class="block text-sm font-medium text-gray-700 mb-2">Description (Optional)</label>
+            <input id="deposit-description" type="text" formControlName="description" 
+                   placeholder="Add a note..." class="input">
+          </div>
+
+          <div *ngIf="success && selectedTab === 0" class="alert alert-success">
+            <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+            </svg>
+            <span>{{ success }}</span>
+          </div>
+
+          <div *ngIf="error && selectedTab === 0" class="alert alert-error">
+            <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+            </svg>
+            <span>{{ error }}</span>
+          </div>
+
+          <button type="submit" [disabled]="loading || depositForm.invalid" class="w-full btn btn-primary btn-lg">
+            <span *ngIf="!loading">Deposit Money</span>
+            <span *ngIf="loading" class="flex items-center justify-center">
+              <span class="spinner mr-2"></span>
+              Processing...
+            </span>
+          </button>
+        </form>
+      </div>
+
+      <!-- Transfer Tab -->
+      <div *ngIf="selectedTab === 1">
+        <p class="text-gray-600 mb-6">Send money to another account</p>
+
+        <!-- Quick Select Beneficiaries -->
+        <div *ngIf="beneficiaries.length > 0" class="mb-6 p-4 bg-gray-50 rounded-lg">
+          <h3 class="text-sm font-medium text-gray-700 mb-3">Quick Select Beneficiary</h3>
+          <div class="flex flex-wrap gap-2">
+            <button *ngFor="let beneficiary of beneficiaries" type="button"
+                    (click)="selectBeneficiary(beneficiary.accountNumber)"
+                    class="px-4 py-2 bg-white border-2 border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-all duration-200 flex items-center gap-2">
+              <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+              </svg>
+              <span class="text-sm font-medium text-gray-700">{{ beneficiary.nickname || beneficiary.beneficiaryName }}</span>
+            </button>
+          </div>
+        </div>
+
+        <form [formGroup]="transferForm" (ngSubmit)="onTransfer()" class="space-y-6">
+          <div>
+            <label for="transfer-from" class="block text-sm font-medium text-gray-700 mb-2">From Account</label>
+            <select id="transfer-from" formControlName="fromAccountId" class="input">
+              <option value="">Choose an account</option>
+              <option *ngFor="let account of accounts" [value]="account.id">
+                {{ account.accountType }} - ****{{ account.accountNumber.slice(-4) }} (${{ account.balance | number:'1.2-2' }})
+              </option>
+            </select>
+            <p *ngIf="transferForm.get('fromAccountId')?.invalid && transferForm.get('fromAccountId')?.touched" 
+               class="mt-1 text-sm text-danger-600">Account is required</p>
+          </div>
+
+          <div>
+            <label for="transfer-recipient" class="block text-sm font-medium text-gray-700 mb-2">Recipient Account Number</label>
+            <input id="transfer-recipient" type="text" formControlName="recipientAccountNumber" 
+                   placeholder="Enter 10-digit account number" class="input">
+            <p *ngIf="transferForm.get('recipientAccountNumber')?.hasError('required') && transferForm.get('recipientAccountNumber')?.touched" 
+               class="mt-1 text-sm text-danger-600">Recipient account is required</p>
+            <p *ngIf="transferForm.get('recipientAccountNumber')?.hasError('pattern') && transferForm.get('recipientAccountNumber')?.touched" 
+               class="mt-1 text-sm text-danger-600">Account number must be 10 digits</p>
+          </div>
+
+          <div>
+            <label for="transfer-amount" class="block text-sm font-medium text-gray-700 mb-2">Amount</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <span class="text-gray-500">$</span>
+              </div>
+              <input id="transfer-amount" type="number" step="0.01" formControlName="amount" 
+                     placeholder="0.00" class="input pl-8">
+            </div>
+            <p *ngIf="transferForm.get('amount')?.hasError('required') && transferForm.get('amount')?.touched" 
+               class="mt-1 text-sm text-danger-600">Amount is required</p>
+            <p *ngIf="transferForm.get('amount')?.hasError('min') && transferForm.get('amount')?.touched" 
+               class="mt-1 text-sm text-danger-600">Amount must be greater than 0</p>
+          </div>
+
+          <div>
+            <label for="transfer-description" class="block text-sm font-medium text-gray-700 mb-2">Description (Optional)</label>
+            <input id="transfer-description" type="text" formControlName="description" 
+                   placeholder="Add a note..." class="input">
+          </div>
+
+          <div *ngIf="success && selectedTab === 1" class="alert alert-success">
+            <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+            </svg>
+            <span>{{ success }}</span>
+          </div>
+
+          <div *ngIf="error && selectedTab === 1" class="alert alert-error">
+            <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+            </svg>
+            <span>{{ error }}</span>
+          </div>
+
+          <button type="submit" [disabled]="loading || transferForm.invalid" class="w-full btn btn-primary btn-lg">
+            <span *ngIf="!loading">Transfer Money</span>
+            <span *ngIf="loading" class="flex items-center justify-center">
+              <span class="spinner mr-2"></span>
+              Processing...
+            </span>
+          </button>
+        </form>
+      </div>
+
+      <!-- Internal Transfer Tab -->
+      <div *ngIf="selectedTab === 2">
+        <p class="text-gray-600 mb-6">Transfer between your own accounts</p>
+        
+        <form [formGroup]="internalTransferForm" (ngSubmit)="onInternalTransfer()" class="space-y-6">
+          <div>
+            <label for="internal-from" class="block text-sm font-medium text-gray-700 mb-2">From Account</label>
+            <select id="internal-from" formControlName="fromAccountId" class="input">
+              <option value="">Choose an account</option>
+              <option *ngFor="let account of accounts" [value]="account.id">
+                {{ account.accountType }} - ****{{ account.accountNumber.slice(-4) }} (${{ account.balance | number:'1.2-2' }})
+              </option>
+            </select>
+            <p *ngIf="internalTransferForm.get('fromAccountId')?.invalid && internalTransferForm.get('fromAccountId')?.touched" 
+               class="mt-1 text-sm text-danger-600">From account is required</p>
+          </div>
+
+          <div>
+            <label for="internal-to" class="block text-sm font-medium text-gray-700 mb-2">To Account</label>
+            <select id="internal-to" formControlName="toAccountId" class="input">
+              <option value="">Choose an account</option>
+              <option *ngFor="let account of accounts" [value]="account.id">
+                {{ account.accountType }} - ****{{ account.accountNumber.slice(-4) }} (${{ account.balance | number:'1.2-2' }})
+              </option>
+            </select>
+            <p *ngIf="internalTransferForm.get('toAccountId')?.invalid && internalTransferForm.get('toAccountId')?.touched" 
+               class="mt-1 text-sm text-danger-600">To account is required</p>
+          </div>
+
+          <div>
+            <label for="internal-amount" class="block text-sm font-medium text-gray-700 mb-2">Amount</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <span class="text-gray-500">$</span>
+              </div>
+              <input id="internal-amount" type="number" step="0.01" formControlName="amount" 
+                     placeholder="0.00" class="input pl-8">
+            </div>
+            <p *ngIf="internalTransferForm.get('amount')?.hasError('required') && internalTransferForm.get('amount')?.touched" 
+               class="mt-1 text-sm text-danger-600">Amount is required</p>
+            <p *ngIf="internalTransferForm.get('amount')?.hasError('min') && internalTransferForm.get('amount')?.touched" 
+               class="mt-1 text-sm text-danger-600">Amount must be greater than 0</p>
+          </div>
+
+          <div>
+            <label for="internal-description" class="block text-sm font-medium text-gray-700 mb-2">Description (Optional)</label>
+            <input id="internal-description" type="text" formControlName="description" 
+                   placeholder="Add a note..." class="input">
+          </div>
+
+          <div *ngIf="success && selectedTab === 2" class="alert alert-success">
+            <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+            </svg>
+            <span>{{ success }}</span>
+          </div>
+
+          <div *ngIf="error && selectedTab === 2" class="alert alert-error">
+            <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+            </svg>
+            <span>{{ error }}</span>
+          </div>
+
+          <button type="submit" [disabled]="loading || internalTransferForm.invalid" class="w-full btn btn-primary btn-lg">
+            <span *ngIf="!loading">Transfer Money</span>
+            <span *ngIf="loading" class="flex items-center justify-center">
+              <span class="spinner mr-2"></span>
+              Processing...
+            </span>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

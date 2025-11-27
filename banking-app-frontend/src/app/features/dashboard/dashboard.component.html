@@ -1,0 +1,230 @@
+<div class="min-h-screen bg-gray-50 py-8">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Page Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900 flex items-center gap-3">
+        <svg class="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+        </svg>
+        Dashboard
+      </h1>
+      <p class="mt-1 text-gray-600">Overview of your banking activities</p>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="loading" class="flex flex-col items-center justify-center py-20 animate-fadeIn">
+      <div class="spinner spinner-lg text-primary-600"></div>
+      <p class="mt-4 text-gray-600">Loading your dashboard...</p>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="error && !loading" class="card max-w-md mx-auto text-center py-12 animate-fadeIn">
+      <svg class="w-16 h-16 text-danger-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      </svg>
+      <p class="text-lg text-gray-700 mb-4">{{ error }}</p>
+      <button (click)="loadDashboard()" class="btn btn-primary">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+        </svg>
+        Retry
+      </button>
+    </div>
+
+    <!-- Dashboard Content -->
+    <div *ngIf="dashboardData && !loading" class="space-y-6 animate-fadeIn">
+      <!-- Total Balance Card -->
+      <div class="bg-gradient-to-br from-primary-600 to-primary-800 rounded-2xl shadow-soft-lg p-8 text-white">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-primary-100 text-sm font-medium mb-2">Total Balance</p>
+            <h2 class="text-4xl font-bold">${{ dashboardData.totalBalance | number:'1.2-2' }}</h2>
+          </div>
+          <div class="bg-white/10 backdrop-blur-sm p-4 rounded-xl">
+            <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Stats -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-white rounded-xl shadow-soft p-6 hover:shadow-soft-lg transition-shadow duration-200">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-600 text-sm font-medium mb-1">Total Accounts</p>
+              <h3 class="text-3xl font-bold text-gray-900">{{ dashboardData.totalAccounts }}</h3>
+            </div>
+            <div class="bg-primary-50 p-4 rounded-xl">
+              <svg class="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-soft p-6 hover:shadow-soft-lg transition-shadow duration-200">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-600 text-sm font-medium mb-1">Total Transactions</p>
+              <h3 class="text-3xl font-bold text-gray-900">{{ dashboardData.totalTransactions }}</h3>
+            </div>
+            <div class="bg-accent-50 p-4 rounded-xl">
+              <svg class="w-8 h-8 text-accent-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Accounts Section -->
+      <div class="bg-white rounded-xl shadow-soft p-6">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-xl font-bold text-gray-900">Your Accounts</h2>
+          <a routerLink="/accounts" class="text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1 transition-colors">
+            View All
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+          </a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div *ngFor="let account of dashboardData.accounts" 
+               class="border-2 border-gray-100 rounded-xl p-5 hover:border-primary-200 hover:shadow-md transition-all duration-200">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2">
+                <div class="p-2 bg-primary-50 rounded-lg">
+                  <svg class="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path *ngIf="account.accountType === 'CHECKING'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                    <path *ngIf="account.accountType === 'SAVINGS'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    <path *ngIf="account.accountType === 'INVESTMENT'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                  </svg>
+                </div>
+                <span class="text-sm font-medium text-gray-700">{{ account.accountType }}</span>
+              </div>
+              <span [class]="account.status === 'ACTIVE' ? 'badge badge-success' : 'badge badge-gray'">
+                {{ account.status }}
+              </span>
+            </div>
+            <p class="text-gray-600 text-sm mb-2">****{{ account.accountNumber.slice(-4) }}</p>
+            <h3 class="text-2xl font-bold text-gray-900">${{ account.balance | number:'1.2-2' }}</h3>
+          </div>
+        </div>
+
+        <div *ngIf="dashboardData.accounts.length === 0" class="text-center py-12">
+          <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+          </svg>
+          <p class="text-gray-600 mb-4">No accounts yet</p>
+          <a routerLink="/accounts" class="btn btn-primary">Create Account</a>
+        </div>
+      </div>
+
+      <!-- Recent Transactions -->
+      <div class="bg-white rounded-xl shadow-soft p-6">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-xl font-bold text-gray-900">Recent Transactions</h2>
+          <a routerLink="/transactions" class="text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1 transition-colors">
+            View All
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+          </a>
+        </div>
+
+        <div *ngIf="dashboardData.recentTransactions.length > 0" class="space-y-3">
+          <div *ngFor="let transaction of dashboardData.recentTransactions; let last = last" 
+               class="flex items-center justify-between p-4 rounded-lg hover:bg-gray-50 transition-colors duration-150"
+               [class.border-b]="!last"
+               [class.border-gray-100]="!last">
+            <div class="flex items-center gap-4">
+              <div [class]="'p-3 rounded-lg ' + 
+                (transaction.type === 'DEPOSIT' || transaction.type === 'TRANSFER_IN' ? 'bg-success-50' : 
+                 transaction.type === 'WITHDRAWAL' || transaction.type === 'TRANSFER_OUT' ? 'bg-warning-50' : 'bg-primary-50')">
+                <svg class="w-6 h-6" 
+                     [class.text-success-600]="transaction.type === 'DEPOSIT' || transaction.type === 'TRANSFER_IN'"
+                     [class.text-warning-600]="transaction.type === 'WITHDRAWAL' || transaction.type === 'TRANSFER_OUT'"
+                     [class.text-primary-600]="transaction.type === 'INTERNAL_TRANSFER'"
+                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path *ngIf="transaction.type === 'DEPOSIT'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                  <path *ngIf="transaction.type === 'WITHDRAWAL'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
+                  <path *ngIf="transaction.type === 'TRANSFER_OUT'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9-7-9-7-9 7 9 7z"></path>
+                  <path *ngIf="transaction.type === 'TRANSFER_IN'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                  <path *ngIf="transaction.type === 'INTERNAL_TRANSFER'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                </svg>
+              </div>
+              <div>
+                <p class="font-medium text-gray-900">{{ transaction.description }}</p>
+                <p class="text-sm text-gray-500">{{ transaction.createdAt | date:'MMM d, y, h:mm a' }}</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <p class="text-lg font-bold"
+                 [class.text-success-600]="transaction.type === 'DEPOSIT' || transaction.type === 'TRANSFER_IN'"
+                 [class.text-warning-600]="transaction.type === 'WITHDRAWAL' || transaction.type === 'TRANSFER_OUT'"
+                 [class.text-gray-900]="transaction.type === 'INTERNAL_TRANSFER'">
+                {{ (transaction.type === 'DEPOSIT' || transaction.type === 'TRANSFER_IN') ? '+' : '-' }}${{ transaction.amount | number:'1.2-2' }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="dashboardData.recentTransactions.length === 0" class="text-center py-12">
+          <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+          </svg>
+          <p class="text-gray-600 mb-4">No transactions yet</p>
+          <a routerLink="/money" class="btn btn-primary">Make a Transaction</a>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="bg-white rounded-xl shadow-soft p-6">
+        <h2 class="text-xl font-bold text-gray-900 mb-6">Quick Actions</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <a routerLink="/money" 
+             class="flex items-center gap-4 p-4 border-2 border-gray-100 rounded-xl hover:border-primary-200 hover:bg-primary-50 transition-all duration-200 group">
+            <div class="p-3 bg-primary-100 group-hover:bg-primary-200 rounded-lg transition-colors">
+              <svg class="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <div>
+              <p class="font-medium text-gray-900">Transfer Money</p>
+              <p class="text-sm text-gray-500">Send funds quickly</p>
+            </div>
+          </a>
+
+          <a routerLink="/transactions" 
+             class="flex items-center gap-4 p-4 border-2 border-gray-100 rounded-xl hover:border-accent-200 hover:bg-accent-50 transition-all duration-200 group">
+            <div class="p-3 bg-accent-100 group-hover:bg-accent-200 rounded-lg transition-colors">
+              <svg class="w-6 h-6 text-accent-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+              </svg>
+            </div>
+            <div>
+              <p class="font-medium text-gray-900">View Transactions</p>
+              <p class="text-sm text-gray-500">Check your history</p>
+            </div>
+          </a>
+
+          <a routerLink="/profile" 
+             class="flex items-center gap-4 p-4 border-2 border-gray-100 rounded-xl hover:border-success-200 hover:bg-success-50 transition-all duration-200 group">
+            <div class="p-3 bg-success-100 group-hover:bg-success-200 rounded-lg transition-colors">
+              <svg class="w-6 h-6 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+              </svg>
+            </div>
+            <div>
+              <p class="font-medium text-gray-900">My Profile</p>
+              <p class="text-sm text-gray-500">Manage your account</p>
+            </div>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
