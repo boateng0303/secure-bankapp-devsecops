@@ -57,20 +57,20 @@ runs:
       id: fmt
       run: terraform fmt -check
       continue-on-error: true
-      working-directory: ./infra/${{ inputs.environment }}
+      working-directory: ./infrastructure/environments/${{ inputs.environment }}
 
     - name: TFLint
       id: tflint
       run: tflint
-      working-directory: ./infra/${{ inputs.environment }}
+      working-directory: ./infrastructure/environments/${{ inputs.environment }}
 
     - name: Checkov
       id: checkov
-      run: checkov -d ./infra/${{ inputs.environment }}
+      run: checkov -d ./infrastructure/environments/${{ inputs.environment }}
 
     - name: TFSEC
       id: tfsec
-      run: tfsec ./infra/${{ inputs.environment }}
+      run: tfsec ./infrastructure/environments/${{ inputs.environment }}
 
     - name: Terraform Init
       id: init
@@ -80,18 +80,17 @@ runs:
         ARM_CLIENT_SECRET: ${{ inputs.client-secret }}
         ARM_SUBSCRIPTION_ID: ${{ inputs.default-subscription-id }}
         ARM_TENANT_ID: ${{ inputs.tenant-id }}
-      working-directory: ./infra/${{ inputs.environment }}
+      working-directory: ./infrastructure/environments/${{ inputs.environment }}
 
     - name: Terraform Validate
       id: validate
       run: terraform validate -no-color
-      working-directory: ./infra/${{ inputs.environment }}
+      working-directory: ./infrastructure/environments/${{ inputs.environment }}
 
     - name: Terraform Plan
       id: plan
       run: |
         terraform plan -input=false -no-color -out=tf.plan
-        # Check if plan has changes
         terraform show -json tf.plan > plan.json
         jq -e '.resource_changes | length > 0' plan.json > /dev/null
       env:
@@ -99,7 +98,7 @@ runs:
         ARM_CLIENT_SECRET: ${{ inputs.client-secret }}
         ARM_SUBSCRIPTION_ID: ${{ inputs.default-subscription-id }}
         ARM_TENANT_ID: ${{ inputs.tenant-id }}
-      working-directory: ./infra/${{ inputs.environment }}
+      working-directory: ./infrastructure/environments/${{ inputs.environment }}
 
     - name: Terraform Show
       id: show
@@ -109,7 +108,7 @@ runs:
         ARM_CLIENT_SECRET: ${{ inputs.client-secret }}
         ARM_SUBSCRIPTION_ID: ${{ inputs.default-subscription-id }}
         ARM_TENANT_ID: ${{ inputs.tenant-id }}
-      working-directory: ./infra/${{ inputs.environment }}
+      working-directory: ./infrastructure/environments/${{ inputs.environment }}
 
     - uses: actions/github-script@v6
       if: github.event_name == 'pull_request'
@@ -164,7 +163,7 @@ ${plans[i]}
         ARM_CLIENT_SECRET: ${{ inputs.client-secret }}
         ARM_SUBSCRIPTION_ID: ${{ inputs.default-subscription-id }}
         ARM_TENANT_ID: ${{ inputs.tenant-id }}
-      working-directory: ./infra/${{ inputs.environment }}
+      working-directory: ./infrastructure/environments/${{ inputs.environment }}
 
     - name: Terraform Destroy
       if: ${{ inputs.destroy == 'true' }}
@@ -174,4 +173,4 @@ ${plans[i]}
         ARM_CLIENT_SECRET: ${{ inputs.client-secret }}
         ARM_SUBSCRIPTION_ID: ${{ inputs.default-subscription-id }}
         ARM_TENANT_ID: ${{ inputs.tenant-id }}
-      working-directory: ./infra/${{ inputs.environment }}
+      working-directory: ./infrastructure/environments/${{ inputs.environment }}
