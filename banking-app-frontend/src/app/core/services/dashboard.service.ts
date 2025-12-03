@@ -13,6 +13,10 @@ export class DashboardService {
   getDashboardData(): Observable<ApiResponse<DashboardData>> {
     return this.apiService.get<ApiResponse<DashboardData>>('/dashboard');
   }
+
+  getTransactionAnalytics(): Observable<ApiResponse<any>> {
+    return this.apiService.get<ApiResponse<any>>('/dashboard/analytics');
+  }
 }
 
 

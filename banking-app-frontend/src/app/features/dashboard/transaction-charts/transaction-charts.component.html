@@ -1,0 +1,92 @@
+<!-- Loading State -->
+<div *ngIf="loading" class="flex flex-col items-center justify-center py-20 animate-fadeIn">
+  <div class="spinner spinner-lg text-primary-600"></div>
+  <p class="mt-4 text-gray-600">Loading charts...</p>
+</div>
+
+<!-- Error State -->
+<div *ngIf="error && !loading" class="card max-w-md mx-auto text-center py-12 animate-fadeIn mb-6">
+  <svg class="w-16 h-16 text-danger-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+  </svg>
+  <p class="text-lg text-gray-700 mb-4">{{ error }}</p>
+  <button (click)="loadChartData()" class="btn btn-primary">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+    </svg>
+    Retry
+  </button>
+</div>
+
+<!-- Charts Content -->
+<div *ngIf="!loading && !error" class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 animate-fadeIn">
+  
+  <!-- Income vs Withdrawals Line Chart -->
+  <div class="bg-white rounded-xl shadow-soft p-6">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h3 class="text-lg font-bold text-gray-900">Income vs Withdrawals</h3>
+        <p class="text-sm text-gray-600">Last 6 months trend</p>
+      </div>
+      <div class="p-2 bg-primary-50 rounded-lg">
+        <svg class="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
+        </svg>
+      </div>
+    </div>
+    <div class="h-80">
+      <canvas baseChart
+              [data]="lineChartData"
+              [options]="lineChartOptions"
+              [type]="lineChartType">
+      </canvas>
+    </div>
+  </div>
+
+  <!-- Transaction Distribution Doughnut Chart -->
+  <div class="bg-white rounded-xl shadow-soft p-6">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h3 class="text-lg font-bold text-gray-900">Transaction Distribution</h3>
+        <p class="text-sm text-gray-600">By transaction type</p>
+      </div>
+      <div class="p-2 bg-accent-50 rounded-lg">
+        <svg class="w-6 h-6 text-accent-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path>
+        </svg>
+      </div>
+    </div>
+    <div class="h-80 flex items-center justify-center">
+      <canvas baseChart
+              [data]="doughnutChartData"
+              [options]="doughnutChartOptions"
+              [type]="doughnutChartType">
+      </canvas>
+    </div>
+  </div>
+
+  <!-- Daily Net Cash Flow Bar Chart -->
+  <div class="bg-white rounded-xl shadow-soft p-6 lg:col-span-2">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h3 class="text-lg font-bold text-gray-900">Daily Cash Flow</h3>
+        <p class="text-sm text-gray-600">Net income/expenses per day (last 30 days)</p>
+      </div>
+      <div class="p-2 bg-success-50 rounded-lg">
+        <svg class="w-6 h-6 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+        </svg>
+      </div>
+    </div>
+    <div class="h-80">
+      <canvas baseChart
+              [data]="barChartData"
+              [options]="barChartOptions"
+              [type]="barChartType">
+      </canvas>
+    </div>
+  </div>
+
+</div>
+

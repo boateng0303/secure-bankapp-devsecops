@@ -4,6 +4,9 @@ import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 
+// Chart.js
+import { NgChartsModule } from 'ng2-charts';
+
 // Routing
 import { AppRoutingModule } from './app-routing.module';
 
@@ -22,6 +25,7 @@ import { TransactionsComponent } from './features/transactions/transactions.comp
 import { MoneyComponent } from './features/money/money.component';
 import { ProfileComponent } from './features/profile/profile.component';
 import { HelpComponent } from './features/help/help.component';
+import { TransactionChartsComponent } from './features/dashboard/transaction-charts/transaction-charts.component';
 
 @NgModule({
   declarations: [
@@ -34,7 +38,8 @@ import { HelpComponent } from './features/help/help.component';
     TransactionsComponent,
     MoneyComponent,
     ProfileComponent,
-    HelpComponent
+    HelpComponent,
+    TransactionChartsComponent
   ],
   imports: [
     BrowserModule,
@@ -42,7 +47,8 @@ import { HelpComponent } from './features/help/help.component';
     HttpClientModule,
     ReactiveFormsModule,
     FormsModule,
-    AppRoutingModule
+    AppRoutingModule,
+    NgChartsModule
   ],
   providers: [
     { provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
