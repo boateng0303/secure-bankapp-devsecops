@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-Get your Secure Banking Application up and running in 5 minutes!
+Get your Reuel Banking Application up and running in 5 minutes!
 
 ## ⚡ Quick Setup
 

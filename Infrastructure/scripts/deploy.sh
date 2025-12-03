@@ -54,3 +54,5 @@ echo ""
 echo "2. Get database credentials:"
 echo "   aws secretsmanager get-secret-value --secret-id \$(terraform output -raw db_secret_arn) --query SecretString --output text | jq ."
 
+
+

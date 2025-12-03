@@ -1,4 +1,4 @@
-# Secure Banking Application - Backend
+# Reuel Banking Application - Backend
 
 A simple, secure banking application backend built with Spring Boot, featuring JWT authentication, RESTful APIs, and comprehensive banking operations.
 

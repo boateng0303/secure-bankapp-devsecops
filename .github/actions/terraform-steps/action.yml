@@ -154,7 +154,7 @@ ${plans[i]}
       if: github.ref == 'refs/heads/main' && github.event_name == 'push'
       run: |
         if [ -s plan.json ]; then
-          terraform apply -input=false tf.plan
+          terraform apply -input=false tf.pland 
         else
           echo "No changes detected. Skipping apply."
         fi

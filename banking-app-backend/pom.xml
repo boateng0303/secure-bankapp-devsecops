@@ -15,8 +15,8 @@
     <groupId>com.banking</groupId>
     <artifactId>secure-banking-app</artifactId>
     <version>1.0.0</version>
-    <name>Secure Banking App</name>
-    <description>Simple Secure Banking Application Backend</description>
+    <name>Reuel Banking App</name>
+    <description>Simple Reuel Banking Application Backend</description>
     
     <properties>
         <java.version>17</java.version>

@@ -196,3 +196,5 @@ resource "aws_security_group_rule" "node_ingress_alb" {
   security_group_id        = aws_security_group.node.id
 }
 
+
+

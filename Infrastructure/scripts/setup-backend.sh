@@ -60,3 +60,5 @@ echo "✅ Backend setup complete!"
 echo "Bucket: ${BUCKET_NAME}"
 echo "DynamoDB Table: ${DYNAMODB_TABLE}"
 
+
+

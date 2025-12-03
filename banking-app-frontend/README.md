@@ -1,6 +1,6 @@
 # Banking Frontend - Angular Application with Tailwind CSS
 
-Complete Angular frontend for the Secure Banking Application, featuring a modern, clean, and professional UI built with Tailwind CSS.
+Complete Angular frontend for the Reuel Banking Application, featuring a modern, clean, and professional UI built with Tailwind CSS.
 
 ---
 

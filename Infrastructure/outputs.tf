@@ -66,3 +66,5 @@ output "cluster_autoscaler_role_arn" {
   value       = module.eks.cluster_autoscaler_role_arn
 }
 
+
+

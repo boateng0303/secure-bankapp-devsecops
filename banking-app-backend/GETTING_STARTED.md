@@ -1,6 +1,6 @@
 clear# 🚀 Getting Started
 
-Welcome to the Secure Banking Application Backend! This guide will help you get up and running in minutes.
+Welcome to the Reuel Banking Application Backend! This guide will help you get up and running in minutes.
 
 ---
 

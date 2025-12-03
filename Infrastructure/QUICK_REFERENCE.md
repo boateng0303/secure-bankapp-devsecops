@@ -599,3 +599,5 @@ alias kns='kubectl config set-context --current --namespace'
 
 **Keep this guide handy for quick reference!** 📖
 
+
+

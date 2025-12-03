@@ -2,7 +2,7 @@
 
 ## ✅ Project Completion Status
 
-**Project:** Secure Banking Application Backend  
+**Project:** Reuel Banking Application Backend  
 **Technology:** Java Spring Boot 3.2.0  
 **Status:** ✅ **COMPLETE**  
 **Date:** November 26, 2024
