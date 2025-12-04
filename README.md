@@ -26,6 +26,18 @@ Reuel Banking App gives you a simple, fast, protected banking experience. You ru
 - manifests contains Kubernetes deployment files.
 - docker contains Dockerfiles and Nginx configs.
 
+## Architecture
+
+![Reuel Banking Architecture](image/Secure%20Bank%20Architecture.gif)
+
+The diagram shows our DevSecOps pipeline:
+- **Infrastructure Pipeline**: GitHub Actions → Terraform → Azure
+- **CI/CD Pipeline**: GitHub → GitHub Actions → ArgoCD → Kubernetes
+- **Security**: Trivy, SonarCloud scanning with email alerts
+- **Monitoring**: Prometheus, Grafana with Slack alerts
+- **Container Registry**: Azure Container Registry (ACR)
+- **Database**: MySQL deployed in Kubernetes
+
 ## How to run locally
 - Install Node and Java 17.
 - Install Angular CLI.
