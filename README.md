@@ -28,7 +28,7 @@ Reuel Banking App gives you a simple, fast, protected banking experience. You ru
 
 ## Architecture
 
-![Reuel Banking Architecture](image/Secure%20Bank%20Architecture.gif)
+![Reuel Banking Architecture](images/Secure%20Bank%20Architecture.gif)
 
 The diagram shows our DevSecOps pipeline:
 - **Infrastructure Pipeline**: GitHub Actions → Terraform → Azure
