@@ -183,6 +183,9 @@ public class DashboardController {
     private TransactionResponse mapToTransactionResponse(Transaction transaction) {
         return TransactionResponse.builder()
                 .id(transaction.getId())
+                .accountId(transaction.getAccount().getId())
+                .accountNumber(transaction.getAccount().getAccountNumber())
+                .accountType(transaction.getAccount().getAccountType().name())
                 .transactionReference(transaction.getTransactionReference())
                 .type(transaction.getType().name())
                 .amount(transaction.getAmount())

@@ -3,6 +3,7 @@ package com.banking.controller;
 import com.banking.dto.request.DepositRequest;
 import com.banking.dto.request.InternalTransferRequest;
 import com.banking.dto.request.TransferRequest;
+import com.banking.dto.request.WithdrawalRequest;
 import com.banking.dto.response.ApiResponse;
 import com.banking.dto.response.TransactionResponse;
 import com.banking.entity.Transaction;
@@ -32,6 +33,16 @@ public class MoneyController {
                 .body(ApiResponse.success("Deposit successful", mapToTransactionResponse(transaction)));
     }
 
+    @PostMapping("/withdraw")
+    public ResponseEntity<ApiResponse<TransactionResponse>> withdraw(
+            @Valid @RequestBody WithdrawalRequest request,
+            @AuthenticationPrincipal User user) {
+        Transaction transaction = transactionService.withdraw(request, user.getId());
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Withdrawal successful", mapToTransactionResponse(transaction)));
+    }
+
     @PostMapping("/transfer")
     public ResponseEntity<ApiResponse<TransactionResponse>> transfer(
             @Valid @RequestBody TransferRequest request,
@@ -55,6 +66,9 @@ public class MoneyController {
     private TransactionResponse mapToTransactionResponse(Transaction transaction) {
         return TransactionResponse.builder()
                 .id(transaction.getId())
+                .accountId(transaction.getAccount().getId())
+                .accountNumber(transaction.getAccount().getAccountNumber())
+                .accountType(transaction.getAccount().getAccountType().name())
                 .transactionReference(transaction.getTransactionReference())
                 .type(transaction.getType().name())
                 .amount(transaction.getAmount())

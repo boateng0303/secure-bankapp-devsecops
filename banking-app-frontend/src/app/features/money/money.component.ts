@@ -17,6 +17,7 @@ export class MoneyComponent implements OnInit {
   beneficiaries: Beneficiary[] = [];
   
   depositForm!: FormGroup;
+  withdrawalForm!: FormGroup;
   transferForm!: FormGroup;
   internalTransferForm!: FormGroup;
   
@@ -25,6 +26,7 @@ export class MoneyComponent implements OnInit {
   error = '';
 
   depositMethods = ['CARD', 'BANK_TRANSFER', 'CASH', 'CHECK'];
+  withdrawalMethods = ['ATM', 'BRANCH', 'ONLINE'];
 
   constructor(
     private fb: FormBuilder,
@@ -47,6 +49,13 @@ export class MoneyComponent implements OnInit {
       description: ['']
     });
 
+    this.withdrawalForm = this.fb.group({
+      accountId: ['', Validators.required],
+      amount: ['', [Validators.required, Validators.min(0.01)]],
+      withdrawalMethod: ['', Validators.required],
+      description: ['']
+    });
+
     this.transferForm = this.fb.group({
       fromAccountId: ['', Validators.required],
       recipientAccountNumber: ['', [Validators.required, Validators.pattern(/^\d{10}$/)]],
@@ -63,7 +72,7 @@ export class MoneyComponent implements OnInit {
   }
 
   loadAccounts(): void {
-    this.accountService.getAllAccounts().subscribe({
+    this.accountService.getActiveAccounts().subscribe({
       next: (response) => {
         this.accounts = response.data;
       },
@@ -100,6 +109,27 @@ export class MoneyComponent implements OnInit {
       },
       error: (error) => {
         this.error = error.message || 'Deposit failed';
+        this.loading = false;
+      }
+    });
+  }
+
+  onWithdraw(): void {
+    if (this.withdrawalForm.invalid) return;
+
+    this.loading = true;
+    this.error = '';
+    this.success = '';
+
+    this.transactionService.withdraw(this.withdrawalForm.value).subscribe({
+      next: (response) => {
+        this.success = 'Withdrawal successful!';
+        this.withdrawalForm.reset();
+        this.loading = false;
+        this.loadAccounts(); // Refresh accounts
+      },
+      error: (error) => {
+        this.error = error.message || 'Withdrawal failed';
         this.loading = false;
       }
     });

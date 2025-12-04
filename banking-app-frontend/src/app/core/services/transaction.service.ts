@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
 import { ApiResponse } from '../../shared/models/api-response.model';
-import { Transaction, DepositRequest, TransferRequest, InternalTransferRequest } from '../../shared/models/transaction.model';
+import { Transaction, DepositRequest, TransferRequest, InternalTransferRequest, WithdrawalRequest } from '../../shared/models/transaction.model';
 
 @Injectable({
   providedIn: 'root'
@@ -24,6 +24,10 @@ export class TransactionService {
 
   deposit(data: DepositRequest): Observable<ApiResponse<Transaction>> {
     return this.apiService.post<ApiResponse<Transaction>>('/money/deposit', data);
+  }
+
+  withdraw(data: WithdrawalRequest): Observable<ApiResponse<Transaction>> {
+    return this.apiService.post<ApiResponse<Transaction>>('/money/withdraw', data);
   }
 
   transfer(data: TransferRequest): Observable<ApiResponse<Transaction>> {

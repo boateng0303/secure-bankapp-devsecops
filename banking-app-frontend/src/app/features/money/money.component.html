@@ -30,14 +30,24 @@
                            (selectedTab === 1 ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300')">
             <div class="flex items-center justify-center gap-2">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9-7-9-7-9 7 9 7z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
               </svg>
-              <span>Transfer</span>
+              <span>Withdraw</span>
             </div>
           </button>
           <button (click)="selectedTab = 2" 
                   [class]="'flex-1 py-4 px-6 text-center border-b-2 font-medium transition-colors duration-200 ' + 
                            (selectedTab === 2 ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300')">
+            <div class="flex items-center justify-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9-7-9-7-9 7 9 7z"></path>
+              </svg>
+              <span>Transfer</span>
+            </div>
+          </button>
+          <button (click)="selectedTab = 3" 
+                  [class]="'flex-1 py-4 px-6 text-center border-b-2 font-medium transition-colors duration-200 ' + 
+                           (selectedTab === 3 ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300')">
             <div class="flex items-center justify-center gap-2">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
@@ -125,8 +135,82 @@
         </form>
       </div>
 
-      <!-- Transfer Tab -->
+      <!-- Withdrawal Tab -->
       <div *ngIf="selectedTab === 1">
+        <p class="text-gray-600 mb-6">Withdraw funds from your account</p>
+        
+        <form [formGroup]="withdrawalForm" (ngSubmit)="onWithdraw()" class="space-y-6">
+          <div>
+            <label for="withdraw-account" class="block text-sm font-medium text-gray-700 mb-2">Select Account</label>
+            <select id="withdraw-account" formControlName="accountId" class="input">
+              <option value="">Choose an account</option>
+              <option *ngFor="let account of accounts" [value]="account.id">
+                {{ account.accountType }} - ****{{ account.accountNumber.slice(-4) }} (${{ account.balance | number:'1.2-2' }})
+              </option>
+            </select>
+            <p *ngIf="withdrawalForm.get('accountId')?.invalid && withdrawalForm.get('accountId')?.touched" 
+               class="mt-1 text-sm text-danger-600">Account is required</p>
+          </div>
+
+          <div>
+            <label for="withdraw-amount" class="block text-sm font-medium text-gray-700 mb-2">Amount</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <span class="text-gray-500">$</span>
+              </div>
+              <input id="withdraw-amount" type="number" step="0.01" formControlName="amount" 
+                     placeholder="0.00" class="input pl-8">
+            </div>
+            <p *ngIf="withdrawalForm.get('amount')?.hasError('required') && withdrawalForm.get('amount')?.touched" 
+               class="mt-1 text-sm text-danger-600">Amount is required</p>
+            <p *ngIf="withdrawalForm.get('amount')?.hasError('min') && withdrawalForm.get('amount')?.touched" 
+               class="mt-1 text-sm text-danger-600">Amount must be greater than 0</p>
+          </div>
+
+          <div>
+            <label for="withdraw-method" class="block text-sm font-medium text-gray-700 mb-2">Withdrawal Method</label>
+            <select id="withdraw-method" formControlName="withdrawalMethod" class="input">
+              <option value="">Choose a method</option>
+              <option *ngFor="let method of withdrawalMethods" [value]="method">
+                {{ method }}
+              </option>
+            </select>
+            <p *ngIf="withdrawalForm.get('withdrawalMethod')?.invalid && withdrawalForm.get('withdrawalMethod')?.touched" 
+               class="mt-1 text-sm text-danger-600">Withdrawal method is required</p>
+          </div>
+
+          <div>
+            <label for="withdraw-description" class="block text-sm font-medium text-gray-700 mb-2">Description (Optional)</label>
+            <input id="withdraw-description" type="text" formControlName="description" 
+                   placeholder="Add a note..." class="input">
+          </div>
+
+          <div *ngIf="success && selectedTab === 1" class="alert alert-success">
+            <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+            </svg>
+            <span>{{ success }}</span>
+          </div>
+
+          <div *ngIf="error && selectedTab === 1" class="alert alert-error">
+            <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+            </svg>
+            <span>{{ error }}</span>
+          </div>
+
+          <button type="submit" [disabled]="loading || withdrawalForm.invalid" class="w-full btn btn-primary btn-lg">
+            <span *ngIf="!loading">Withdraw Money</span>
+            <span *ngIf="loading" class="flex items-center justify-center">
+              <span class="spinner mr-2"></span>
+              Processing...
+            </span>
+          </button>
+        </form>
+      </div>
+
+      <!-- Transfer Tab -->
+      <div *ngIf="selectedTab === 2">
         <p class="text-gray-600 mb-6">Send money to another account</p>
 
         <!-- Quick Select Beneficiaries -->
@@ -188,14 +272,14 @@
                    placeholder="Add a note..." class="input">
           </div>
 
-          <div *ngIf="success && selectedTab === 1" class="alert alert-success">
+          <div *ngIf="success && selectedTab === 2" class="alert alert-success">
             <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
             </svg>
             <span>{{ success }}</span>
           </div>
 
-          <div *ngIf="error && selectedTab === 1" class="alert alert-error">
+          <div *ngIf="error && selectedTab === 2" class="alert alert-error">
             <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
             </svg>
@@ -213,7 +297,7 @@
       </div>
 
       <!-- Internal Transfer Tab -->
-      <div *ngIf="selectedTab === 2">
+      <div *ngIf="selectedTab === 3">
         <p class="text-gray-600 mb-6">Transfer between your own accounts</p>
         
         <form [formGroup]="internalTransferForm" (ngSubmit)="onInternalTransfer()" class="space-y-6">
@@ -262,14 +346,14 @@
                    placeholder="Add a note..." class="input">
           </div>
 
-          <div *ngIf="success && selectedTab === 2" class="alert alert-success">
+          <div *ngIf="success && selectedTab === 3" class="alert alert-success">
             <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
             </svg>
             <span>{{ success }}</span>
           </div>
 
-          <div *ngIf="error && selectedTab === 2" class="alert alert-error">
+          <div *ngIf="error && selectedTab === 3" class="alert alert-error">
             <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
             </svg>

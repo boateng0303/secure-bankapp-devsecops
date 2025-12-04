@@ -1,10 +1,12 @@
 package com.banking.controller;
 
+import com.banking.dto.request.CreateAccountRequest;
 import com.banking.dto.response.AccountResponse;
 import com.banking.dto.response.ApiResponse;
 import com.banking.entity.Account;
 import com.banking.entity.User;
 import com.banking.service.AccountService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -30,6 +32,16 @@ public class AccountController {
         return ResponseEntity.ok(ApiResponse.success("Accounts retrieved successfully", response));
     }
 
+    @GetMapping("/active")
+    public ResponseEntity<ApiResponse<List<AccountResponse>>> getActiveAccounts(@AuthenticationPrincipal User user) {
+        List<Account> accounts = accountService.getActiveAccountsByUserId(user.getId());
+        List<AccountResponse> response = accounts.stream()
+                .map(this::mapToAccountResponse)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(ApiResponse.success("Active accounts retrieved successfully", response));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<AccountResponse>> getAccountById(
             @PathVariable Long id,
@@ -43,6 +55,22 @@ public class AccountController {
         }
 
         return ResponseEntity.ok(ApiResponse.success("Account retrieved successfully", mapToAccountResponse(account)));
+    }
+
+    @PostMapping
+    public ResponseEntity<ApiResponse<AccountResponse>> createAccount(
+            @Valid @RequestBody CreateAccountRequest request,
+            @AuthenticationPrincipal User user) {
+        Account account = accountService.createAccount(request, user);
+        return ResponseEntity.ok(ApiResponse.success("Account created successfully", mapToAccountResponse(account)));
+    }
+
+    @PostMapping("/{id}/close")
+    public ResponseEntity<ApiResponse<AccountResponse>> closeAccount(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user) {
+        Account account = accountService.closeAccount(id, user);
+        return ResponseEntity.ok(ApiResponse.success("Account closed successfully", mapToAccountResponse(account)));
     }
 
     private AccountResponse mapToAccountResponse(Account account) {

@@ -1,5 +1,8 @@
 export interface Transaction {
   id: number;
+  accountId: number;
+  accountNumber: string;
+  accountType: string;
   transactionReference: string;
   type: string;
   amount: number;
@@ -30,6 +33,13 @@ export interface InternalTransferRequest {
   fromAccountId: number;
   toAccountId: number;
   amount: number;
+  description?: string;
+}
+
+export interface WithdrawalRequest {
+  accountId: number;
+  amount: number;
+  withdrawalMethod?: string;
   description?: string;
 }
 

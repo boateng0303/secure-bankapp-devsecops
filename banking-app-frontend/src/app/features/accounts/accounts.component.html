@@ -1,0 +1,222 @@
+<div class="min-h-screen bg-gray-50 py-8">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Page Header -->
+    <div class="mb-8 flex items-center justify-between">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900 flex items-center gap-3">
+          <svg class="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+          </svg>
+          My Accounts
+        </h1>
+        <p class="mt-1 text-gray-600">Manage your bank accounts</p>
+      </div>
+      <button *ngIf="getAvailableAccountTypes().length > 0" 
+              (click)="openCreateModal()" 
+              class="btn btn-primary flex items-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+        </svg>
+        Create Account
+      </button>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="loading" class="flex flex-col items-center justify-center py-20 animate-fadeIn">
+      <div class="spinner spinner-lg text-primary-600"></div>
+      <p class="mt-4 text-gray-600">Loading accounts...</p>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <div *ngIf="success" class="mb-6 alert alert-success animate-fadeIn">
+      <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+      </svg>
+      <span>{{ success }}</span>
+    </div>
+
+    <div *ngIf="error && !showCreateModal" class="mb-6 alert alert-error animate-fadeIn">
+      <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+      </svg>
+      <span>{{ error }}</span>
+    </div>
+
+    <!-- Content -->
+    <div *ngIf="!loading" class="space-y-6 animate-fadeIn">
+      <!-- Total Balance Card -->
+      <div class="bg-gradient-to-br from-primary-600 to-primary-800 rounded-2xl shadow-soft-lg p-8 text-white">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-primary-100 text-sm font-medium mb-2">Total Balance</p>
+            <h2 class="text-4xl font-bold">${{ totalBalance | number:'1.2-2' }}</h2>
+            <p class="text-primary-200 mt-2">{{ activeAccounts.length }} active account{{ activeAccounts.length !== 1 ? 's' : '' }}</p>
+          </div>
+          <div class="bg-white/10 backdrop-blur-sm p-4 rounded-xl">
+            <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Accounts -->
+      <div class="bg-white rounded-xl shadow-soft p-6">
+        <h2 class="text-xl font-bold text-gray-900 mb-6">Active Accounts</h2>
+        
+        <div *ngIf="activeAccounts.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div *ngFor="let account of activeAccounts" 
+               class="border-2 border-gray-100 rounded-xl p-6 hover:border-primary-200 hover:shadow-md transition-all duration-200">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div [class]="'p-3 rounded-xl bg-' + getAccountColor(account.accountType) + '-50'">
+                  <svg [class]="'w-6 h-6 text-' + getAccountColor(account.accountType) + '-600'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="getAccountIcon(account.accountType)"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="font-semibold text-gray-900">{{ account.accountType }}</h3>
+                  <p class="text-sm text-gray-500">****{{ account.accountNumber.slice(-4) }}</p>
+                </div>
+              </div>
+              <span class="badge badge-success">{{ account.status }}</span>
+            </div>
+            
+            <div class="mb-4">
+              <p class="text-sm text-gray-500">Current Balance</p>
+              <h2 class="text-2xl font-bold text-gray-900">${{ account.balance | number:'1.2-2' }}</h2>
+            </div>
+
+            <div class="flex items-center justify-between text-sm text-gray-500 mb-4">
+              <span>Account Number</span>
+              <span class="font-mono">{{ account.accountNumber }}</span>
+            </div>
+
+            <div class="flex items-center justify-between text-sm text-gray-500 mb-4">
+              <span>Currency</span>
+              <span>{{ account.currency }}</span>
+            </div>
+
+            <div class="pt-4 border-t border-gray-100 flex gap-2">
+              <a routerLink="/money" class="flex-1 btn btn-outline btn-sm text-center">
+                Transfer
+              </a>
+              <button (click)="closeAccount(account)" 
+                      [disabled]="actionLoading || account.balance > 0"
+                      class="btn btn-outline btn-sm text-danger-600 border-danger-200 hover:bg-danger-50"
+                      [title]="account.balance > 0 ? 'Withdraw all funds before closing' : 'Close account'">
+                Close
+              </button>
+            </div>
+            <p *ngIf="account.balance > 0" class="text-xs text-gray-400 mt-2 text-center">
+              Withdraw all funds to close this account
+            </p>
+          </div>
+        </div>
+
+        <div *ngIf="activeAccounts.length === 0" class="text-center py-12">
+          <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+          </svg>
+          <p class="text-gray-600 mb-4">No active accounts</p>
+          <button (click)="openCreateModal()" class="btn btn-primary">Create Your First Account</button>
+        </div>
+      </div>
+
+      <!-- Closed Accounts -->
+      <div *ngIf="closedAccounts.length > 0" class="bg-white rounded-xl shadow-soft p-6">
+        <h2 class="text-xl font-bold text-gray-900 mb-6">Closed Accounts</h2>
+        
+        <div class="space-y-3">
+          <div *ngFor="let account of closedAccounts" 
+               class="flex items-center justify-between p-4 bg-gray-50 rounded-lg opacity-60">
+            <div class="flex items-center gap-3">
+              <div class="p-2 bg-gray-200 rounded-lg">
+                <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="getAccountIcon(account.accountType)"></path>
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-medium text-gray-700">{{ account.accountType }}</h3>
+                <p class="text-sm text-gray-500">****{{ account.accountNumber.slice(-4) }}</p>
+              </div>
+            </div>
+            <span class="badge badge-gray">CLOSED</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create Account Modal -->
+<div *ngIf="showCreateModal" class="fixed inset-0 z-50 overflow-y-auto">
+  <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+    <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" (click)="closeCreateModal()"></div>
+    
+    <div class="relative inline-block w-full max-w-md p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-xl font-bold text-gray-900">Create New Account</h3>
+        <button (click)="closeCreateModal()" class="text-gray-400 hover:text-gray-600">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <div *ngIf="error" class="mb-4 alert alert-error">
+        <span>{{ error }}</span>
+      </div>
+
+      <div class="space-y-4">
+        <p class="text-gray-600">Select the type of account you want to create:</p>
+        
+        <div class="space-y-3">
+          <div *ngFor="let type of getAvailableAccountTypes()" 
+               (click)="selectedAccountType = type"
+               [class]="'flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ' + 
+                        (selectedAccountType === type ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-primary-200')">
+            <div [class]="'p-3 rounded-xl ' + (selectedAccountType === type ? 'bg-primary-100' : 'bg-gray-100')">
+              <svg [class]="'w-6 h-6 ' + (selectedAccountType === type ? 'text-primary-600' : 'text-gray-600')" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="getAccountIcon(type)"></path>
+              </svg>
+            </div>
+            <div class="flex-1">
+              <h4 class="font-semibold text-gray-900">{{ type }}</h4>
+              <p class="text-sm text-gray-500">
+                <ng-container [ngSwitch]="type">
+                  <span *ngSwitchCase="'SAVINGS'">Earn interest on your savings</span>
+                  <span *ngSwitchCase="'CHECKING'">For everyday transactions</span>
+                  <span *ngSwitchCase="'INVESTMENT'">Grow your wealth</span>
+                </ng-container>
+              </p>
+            </div>
+            <div *ngIf="selectedAccountType === type" class="text-primary-600">
+              <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="getAvailableAccountTypes().length === 0" class="text-center py-4">
+          <p class="text-gray-600">You already have all account types!</p>
+        </div>
+
+        <div class="flex gap-3 pt-4">
+          <button (click)="closeCreateModal()" class="flex-1 btn btn-outline">Cancel</button>
+          <button (click)="createAccount()" 
+                  [disabled]="actionLoading || !selectedAccountType" 
+                  class="flex-1 btn btn-primary">
+            <span *ngIf="!actionLoading">Create Account</span>
+            <span *ngIf="actionLoading" class="flex items-center justify-center">
+              <span class="spinner mr-2"></span>
+              Creating...
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

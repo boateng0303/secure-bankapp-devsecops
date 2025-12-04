@@ -1,4 +1,4 @@
-# Reuel Banking App
+ # Reuel Banking App
 
 Reuel Banking App gives you a simple, fast, protected banking experience. You run it with an Angular frontend and a Spring Boot backend. The system helps you test modern DevSecOps skills through a realistic workflow.
 

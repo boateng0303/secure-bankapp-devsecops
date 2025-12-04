@@ -3,6 +3,7 @@ package com.banking.service;
 import com.banking.dto.request.DepositRequest;
 import com.banking.dto.request.InternalTransferRequest;
 import com.banking.dto.request.TransferRequest;
+import com.banking.dto.request.WithdrawalRequest;
 import com.banking.entity.Account;
 import com.banking.entity.Transaction;
 import com.banking.exception.BadRequestException;
@@ -52,6 +53,11 @@ public class TransactionService {
     public Transaction deposit(DepositRequest request) {
         Account account = accountService.getAccountById(request.getAccountId());
 
+        // Check if account is active
+        if (account.getStatus() != Account.AccountStatus.ACTIVE) {
+            throw new BadRequestException("Cannot deposit to a closed or inactive account");
+        }
+
         // Update balance
         BigDecimal newBalance = account.getBalance().add(request.getAmount());
         accountService.updateBalance(account, newBalance);
@@ -66,6 +72,44 @@ public class TransactionService {
                 .status(Transaction.TransactionStatus.COMPLETED)
                 .account(account)
                 .depositMethod(request.getDepositMethod())
+                .build();
+
+        return transactionRepository.save(transaction);
+    }
+
+    @Transactional
+    public Transaction withdraw(WithdrawalRequest request, Long userId) {
+        Account account = accountService.getAccountById(request.getAccountId());
+
+        // Verify account belongs to user
+        if (!account.getUser().getId().equals(userId)) {
+            throw new BadRequestException("You don't have permission to withdraw from this account");
+        }
+
+        // Check if account is active
+        if (account.getStatus() != Account.AccountStatus.ACTIVE) {
+            throw new BadRequestException("Account is not active");
+        }
+
+        // Check sufficient balance
+        if (account.getBalance().compareTo(request.getAmount()) < 0) {
+            throw new InsufficientBalanceException("Insufficient balance for this withdrawal");
+        }
+
+        // Update balance
+        BigDecimal newBalance = account.getBalance().subtract(request.getAmount());
+        accountService.updateBalance(account, newBalance);
+
+        // Create transaction record
+        Transaction transaction = Transaction.builder()
+                .transactionReference(generateTransactionReference())
+                .type(Transaction.TransactionType.WITHDRAWAL)
+                .amount(request.getAmount())
+                .balanceAfter(newBalance)
+                .description(request.getDescription() != null ? request.getDescription() : "Withdrawal")
+                .status(Transaction.TransactionStatus.COMPLETED)
+                .account(account)
+                .depositMethod(request.getWithdrawalMethod()) // Reusing depositMethod field for withdrawal method
                 .build();
 
         return transactionRepository.save(transaction);
@@ -96,6 +140,11 @@ public class TransactionService {
             recipientAccount = accountService.getAccountByNumber(request.getRecipientAccountNumber());
         } catch (ResourceNotFoundException e) {
             throw new BadRequestException("Recipient account not found");
+        }
+
+        // Check if recipient account is active
+        if (recipientAccount.getStatus() != Account.AccountStatus.ACTIVE) {
+            throw new BadRequestException("Cannot transfer to a closed or inactive account");
         }
 
         // Deduct from sender

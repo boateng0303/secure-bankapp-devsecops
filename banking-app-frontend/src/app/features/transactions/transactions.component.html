@@ -1,14 +1,40 @@
 <div class="min-h-screen bg-gray-50 py-8">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <!-- Page Header -->
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold text-gray-900 flex items-center gap-3">
-        <svg class="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-        </svg>
-        Transaction History
-      </h1>
-      <p class="mt-1 text-gray-600">View and search all your transactions</p>
+    <div class="mb-8 flex items-start justify-between">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900 flex items-center gap-3">
+          <svg class="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+          </svg>
+          Transaction History
+        </h1>
+        <p class="mt-1 text-gray-600">View and search all your transactions</p>
+      </div>
+      
+      <!-- Download Buttons -->
+      <div class="flex gap-2">
+        <button (click)="downloadCSV()" 
+                [disabled]="filteredTransactions.length === 0"
+                class="btn btn-outline flex items-center gap-2"
+                [class.opacity-50]="filteredTransactions.length === 0"
+                [class.cursor-not-allowed]="filteredTransactions.length === 0">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+          CSV
+        </button>
+        <button (click)="downloadPDF()" 
+                [disabled]="filteredTransactions.length === 0"
+                class="btn btn-primary flex items-center gap-2"
+                [class.opacity-50]="filteredTransactions.length === 0"
+                [class.cursor-not-allowed]="filteredTransactions.length === 0">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+          </svg>
+          Print / PDF
+        </button>
+      </div>
     </div>
 
     <!-- Loading State -->
@@ -35,7 +61,7 @@
     <div *ngIf="!loading && !error" class="space-y-6 animate-fadeIn">
       <!-- Filters Card -->
       <div class="bg-white rounded-xl shadow-soft p-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <!-- Search Field -->
           <div>
             <label for="search" class="block text-sm font-medium text-gray-700 mb-2">Search</label>
@@ -56,6 +82,22 @@
             </div>
           </div>
 
+          <!-- Account Filter -->
+          <div>
+            <label for="accountFilter" class="block text-sm font-medium text-gray-700 mb-2">Account</label>
+            <select
+              id="accountFilter"
+              [(ngModel)]="filterAccount"
+              (ngModelChange)="onAccountFilterChange()"
+              class="input"
+            >
+              <option value="ALL">All Accounts</option>
+              <option *ngFor="let account of accounts" [value]="account.id">
+                {{ account.accountType }} - ****{{ account.accountNumber.slice(-4) }}
+              </option>
+            </select>
+          </div>
+
           <!-- Filter Type -->
           <div>
             <label for="filter" class="block text-sm font-medium text-gray-700 mb-2">Transaction Type</label>
@@ -73,11 +115,20 @@
         </div>
 
         <!-- Results Summary -->
-        <div class="mt-4 pt-4 border-t border-gray-200">
+        <div class="mt-4 pt-4 border-t border-gray-200 flex items-center justify-between">
           <p class="text-sm text-gray-600">
             Showing <span class="font-semibold text-gray-900">{{ filteredTransactions.length }}</span> 
             of <span class="font-semibold text-gray-900">{{ transactions.length }}</span> transactions
           </p>
+          <button 
+            *ngIf="searchTerm || filterType !== 'ALL' || filterAccount !== 'ALL'"
+            (click)="clearFilters()" 
+            class="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+            Clear Filters
+          </button>
         </div>
       </div>
 
@@ -143,13 +194,16 @@
                       </div>
 
                       <!-- Type Badge -->
-                      <div class="mt-2">
+                      <div class="mt-2 flex flex-wrap gap-2">
+                        <span class="badge badge-gray">
+                          {{ transaction.accountType }} ****{{ transaction.accountNumber.slice(-4) }}
+                        </span>
                         <span [class]="'badge ' + 
                           (transaction.type === 'DEPOSIT' || transaction.type === 'TRANSFER_IN' ? 'badge-success' : 
                            transaction.type === 'WITHDRAWAL' || transaction.type === 'TRANSFER_OUT' ? 'badge-warning' : 'badge-primary')">
                           {{ transaction.type.replace('_', ' ') }}
                         </span>
-                        <span [class]="'badge ml-2 ' + 
+                        <span [class]="'badge ' + 
                           (transaction.status === 'COMPLETED' ? 'badge-success' : 
                            transaction.status === 'PENDING' ? 'badge-warning' : 
                            transaction.status === 'FAILED' ? 'badge-danger' : 'badge-gray')">
@@ -185,12 +239,12 @@
         </svg>
         <h3 class="text-xl font-semibold text-gray-900 mb-2">No transactions found</h3>
         <p class="text-gray-600 mb-6">
-          {{ searchTerm || filterType !== 'ALL' ? 'Try adjusting your filters' : 'You haven\'t made any transactions yet' }}
+          {{ (searchTerm || filterType !== 'ALL' || filterAccount !== 'ALL') ? 'Try adjusting your filters' : 'You haven\'t made any transactions yet' }}
         </p>
-        <a *ngIf="!searchTerm && filterType === 'ALL'" routerLink="/money" class="btn btn-primary">
+        <a *ngIf="!searchTerm && filterType === 'ALL' && filterAccount === 'ALL'" routerLink="/money" class="btn btn-primary">
           Make a Transaction
         </a>
-        <button *ngIf="searchTerm || filterType !== 'ALL'" (click)="searchTerm = ''; filterType = 'ALL'; applyFilters()" class="btn btn-outline">
+        <button *ngIf="searchTerm || filterType !== 'ALL' || filterAccount !== 'ALL'" (click)="clearFilters()" class="btn btn-outline">
           Clear Filters
         </button>
       </div>

@@ -26,6 +26,8 @@ import { MoneyComponent } from './features/money/money.component';
 import { ProfileComponent } from './features/profile/profile.component';
 import { HelpComponent } from './features/help/help.component';
 import { TransactionChartsComponent } from './features/dashboard/transaction-charts/transaction-charts.component';
+import { AccountsComponent } from './features/accounts/accounts.component';
+import { BeneficiariesComponent } from './features/beneficiaries/beneficiaries.component';
 
 @NgModule({
   declarations: [
@@ -39,7 +41,9 @@ import { TransactionChartsComponent } from './features/dashboard/transaction-cha
     MoneyComponent,
     ProfileComponent,
     HelpComponent,
-    TransactionChartsComponent
+    TransactionChartsComponent,
+    AccountsComponent,
+    BeneficiariesComponent
   ],
   imports: [
     BrowserModule,

@@ -11,6 +11,8 @@ import { TransactionsComponent } from './features/transactions/transactions.comp
 import { MoneyComponent } from './features/money/money.component';
 import { ProfileComponent } from './features/profile/profile.component';
 import { HelpComponent } from './features/help/help.component';
+import { AccountsComponent } from './features/accounts/accounts.component';
+import { BeneficiariesComponent } from './features/beneficiaries/beneficiaries.component';
 
 const routes: Routes = [
   // Public routes
@@ -22,6 +24,11 @@ const routes: Routes = [
   { 
     path: 'dashboard', 
     component: DashboardComponent,
+    canActivate: [AuthGuard]
+  },
+  { 
+    path: 'accounts', 
+    component: AccountsComponent,
     canActivate: [AuthGuard]
   },
   { 
@@ -37,6 +44,11 @@ const routes: Routes = [
   { 
     path: 'profile', 
     component: ProfileComponent,
+    canActivate: [AuthGuard]
+  },
+  { 
+    path: 'beneficiaries', 
+    component: BeneficiariesComponent,
     canActivate: [AuthGuard]
   },
   { 

@@ -1,0 +1,231 @@
+<div class="min-h-screen bg-gray-50 py-8">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Page Header -->
+    <div class="mb-8 flex items-center justify-between">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900 flex items-center gap-3">
+          <svg class="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+          </svg>
+          Beneficiaries
+        </h1>
+        <p class="mt-1 text-gray-600">Manage your saved recipients for quick transfers</p>
+      </div>
+      <button (click)="openAddModal()" class="btn btn-primary flex items-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+        </svg>
+        Add Beneficiary
+      </button>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="loading" class="flex flex-col items-center justify-center py-20 animate-fadeIn">
+      <div class="spinner spinner-lg text-primary-600"></div>
+      <p class="mt-4 text-gray-600">Loading beneficiaries...</p>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <div *ngIf="success && !showModal" class="mb-6 alert alert-success animate-fadeIn">
+      <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+      </svg>
+      <span>{{ success }}</span>
+    </div>
+
+    <div *ngIf="error && !showModal" class="mb-6 alert alert-error animate-fadeIn">
+      <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+      </svg>
+      <span>{{ error }}</span>
+    </div>
+
+    <!-- Content -->
+    <div *ngIf="!loading" class="animate-fadeIn">
+      <!-- Stats Card -->
+      <div class="bg-gradient-to-br from-primary-600 to-primary-800 rounded-2xl shadow-soft-lg p-6 text-white mb-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-primary-100 text-sm font-medium mb-1">Total Beneficiaries</p>
+            <h2 class="text-3xl font-bold">{{ beneficiaries.length }}</h2>
+            <p class="text-primary-200 mt-1 text-sm">Saved for quick transfers</p>
+          </div>
+          <div class="bg-white/10 backdrop-blur-sm p-4 rounded-xl">
+            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Beneficiaries List -->
+      <div class="bg-white rounded-xl shadow-soft">
+        <div class="p-6 border-b border-gray-100">
+          <h2 class="text-lg font-bold text-gray-900">Saved Recipients</h2>
+        </div>
+
+        <div *ngIf="beneficiaries.length > 0" class="divide-y divide-gray-100">
+          <div *ngFor="let beneficiary of beneficiaries; let i = index" 
+               class="p-6 hover:bg-gray-50 transition-colors duration-150">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-4">
+                <!-- Avatar -->
+                <div [class]="'w-12 h-12 rounded-full flex items-center justify-center text-white font-bold ' + getAvatarColor(i)">
+                  {{ getInitials(beneficiary.beneficiaryName) }}
+                </div>
+                
+                <!-- Info -->
+                <div>
+                  <div class="flex items-center gap-2">
+                    <h3 class="font-semibold text-gray-900">{{ beneficiary.beneficiaryName }}</h3>
+                    <span *ngIf="beneficiary.nickname" class="text-sm text-gray-500">({{ beneficiary.nickname }})</span>
+                  </div>
+                  <div class="flex items-center gap-4 mt-1">
+                    <span class="text-sm text-gray-600 font-mono">{{ beneficiary.accountNumber }}</span>
+                    <span class="text-sm text-gray-500">{{ beneficiary.bankName }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Actions -->
+              <div class="flex items-center gap-2">
+                <a routerLink="/money" 
+                   class="btn btn-outline btn-sm flex items-center gap-1">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9-7-9-7-9 7 9 7z"></path>
+                  </svg>
+                  Transfer
+                </a>
+                <button (click)="openEditModal(beneficiary)" 
+                        class="p-2 text-gray-500 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                  </svg>
+                </button>
+                <button (click)="deleteBeneficiary(beneficiary)" 
+                        [disabled]="actionLoading"
+                        class="p-2 text-gray-500 hover:text-danger-600 hover:bg-danger-50 rounded-lg transition-colors">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty State -->
+        <div *ngIf="beneficiaries.length === 0" class="p-12 text-center">
+          <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+          </svg>
+          <h3 class="text-lg font-medium text-gray-900 mb-2">No beneficiaries yet</h3>
+          <p class="text-gray-600 mb-6">Add beneficiaries to make transfers faster and easier.</p>
+          <button (click)="openAddModal()" class="btn btn-primary">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            </svg>
+            Add Your First Beneficiary
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Beneficiary Modal -->
+<div *ngIf="showModal" class="fixed inset-0 z-50 overflow-y-auto">
+  <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+    <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" (click)="closeModal()"></div>
+    
+    <div class="relative inline-block w-full max-w-lg p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-xl font-bold text-gray-900">
+          {{ isEditMode ? 'Edit Beneficiary' : 'Add New Beneficiary' }}
+        </h3>
+        <button (click)="closeModal()" class="text-gray-400 hover:text-gray-600">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <div *ngIf="error" class="mb-4 alert alert-error">
+        <span>{{ error }}</span>
+      </div>
+
+      <form [formGroup]="beneficiaryForm" (ngSubmit)="saveBeneficiary()" class="space-y-4">
+        <!-- Beneficiary Name -->
+        <div>
+          <label for="beneficiaryName" class="block text-sm font-medium text-gray-700 mb-2">
+            Full Name <span class="text-danger-500">*</span>
+          </label>
+          <input id="beneficiaryName" type="text" formControlName="beneficiaryName" 
+                 placeholder="John Doe" class="input">
+          <p *ngIf="beneficiaryForm.get('beneficiaryName')?.hasError('required') && beneficiaryForm.get('beneficiaryName')?.touched" 
+             class="mt-1 text-sm text-danger-600">Name is required</p>
+          <p *ngIf="beneficiaryForm.get('beneficiaryName')?.hasError('minlength') && beneficiaryForm.get('beneficiaryName')?.touched" 
+             class="mt-1 text-sm text-danger-600">Name must be at least 2 characters</p>
+        </div>
+
+        <!-- Account Number -->
+        <div>
+          <label for="accountNumber" class="block text-sm font-medium text-gray-700 mb-2">
+            Account Number <span class="text-danger-500">*</span>
+          </label>
+          <input id="accountNumber" type="text" formControlName="accountNumber" 
+                 placeholder="1234567890" maxlength="10" class="input font-mono">
+          <p *ngIf="beneficiaryForm.get('accountNumber')?.hasError('required') && beneficiaryForm.get('accountNumber')?.touched" 
+             class="mt-1 text-sm text-danger-600">Account number is required</p>
+          <p *ngIf="beneficiaryForm.get('accountNumber')?.hasError('pattern') && beneficiaryForm.get('accountNumber')?.touched" 
+             class="mt-1 text-sm text-danger-600">Must be exactly 10 digits</p>
+        </div>
+
+        <!-- Bank Name -->
+        <div>
+          <label for="bankName" class="block text-sm font-medium text-gray-700 mb-2">
+            Bank Name <span class="text-danger-500">*</span>
+          </label>
+          <input id="bankName" type="text" formControlName="bankName" 
+                 placeholder="Reuel Banking" class="input">
+          <p *ngIf="beneficiaryForm.get('bankName')?.invalid && beneficiaryForm.get('bankName')?.touched" 
+             class="mt-1 text-sm text-danger-600">Bank name is required</p>
+        </div>
+
+        <!-- Bank Code (Optional) -->
+        <div>
+          <label for="bankCode" class="block text-sm font-medium text-gray-700 mb-2">
+            Bank Code <span class="text-gray-400">(Optional)</span>
+          </label>
+          <input id="bankCode" type="text" formControlName="bankCode" 
+                 placeholder="REUEL001" class="input">
+        </div>
+
+        <!-- Nickname (Optional) -->
+        <div>
+          <label for="nickname" class="block text-sm font-medium text-gray-700 mb-2">
+            Nickname <span class="text-gray-400">(Optional)</span>
+          </label>
+          <input id="nickname" type="text" formControlName="nickname" 
+                 placeholder="e.g., Mom, Best Friend, Landlord" class="input">
+          <p class="mt-1 text-xs text-gray-500">A friendly name to quickly identify this recipient</p>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-3 pt-4">
+          <button type="button" (click)="closeModal()" class="flex-1 btn btn-outline">Cancel</button>
+          <button type="submit" 
+                  [disabled]="actionLoading || beneficiaryForm.invalid" 
+                  class="flex-1 btn btn-primary">
+            <span *ngIf="!actionLoading">{{ isEditMode ? 'Save Changes' : 'Add Beneficiary' }}</span>
+            <span *ngIf="actionLoading" class="flex items-center justify-center">
+              <span class="spinner mr-2"></span>
+              {{ isEditMode ? 'Saving...' : 'Adding...' }}
+            </span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
