@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { TransactionService } from '../../core/services/transaction.service';
 import { AccountService } from '../../core/services/account.service';
 import { BeneficiaryService } from '../../core/services/beneficiary.service';
@@ -68,7 +68,7 @@ export class MoneyComponent implements OnInit {
       toAccountId: ['', Validators.required],
       amount: ['', [Validators.required, Validators.min(0.01)]],
       description: ['']
-    });
+    }, { validators: this.sameAccountValidator });
   }
 
   loadAccounts(): void {
@@ -184,6 +184,16 @@ export class MoneyComponent implements OnInit {
   getAccountBalance(accountId: number): string {
     const account = this.accounts.find(a => a.id === accountId);
     return account ? `$${account.balance.toFixed(2)}` : 'N/A';
+  }
+
+  sameAccountValidator(control: AbstractControl): ValidationErrors | null {
+    const fromAccountId = control.get('fromAccountId')?.value;
+    const toAccountId = control.get('toAccountId')?.value;
+    
+    if (fromAccountId && toAccountId && fromAccountId === toAccountId) {
+      return { sameAccount: true };
+    }
+    return null;
   }
 }
 

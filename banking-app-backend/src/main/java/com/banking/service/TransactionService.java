@@ -190,6 +190,11 @@ public class TransactionService {
 
     @Transactional
     public Transaction internalTransfer(InternalTransferRequest request, Long userId) {
+        // Check if source and destination accounts are the same
+        if (request.getFromAccountId().equals(request.getToAccountId())) {
+            throw new BadRequestException("Cannot transfer to the same account");
+        }
+
         Account fromAccount = accountService.getAccountById(request.getFromAccountId());
         Account toAccount = accountService.getAccountById(request.getToAccountId());
 

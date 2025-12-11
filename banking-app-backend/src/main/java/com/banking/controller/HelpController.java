@@ -17,7 +17,7 @@ public class HelpController {
     public ResponseEntity<ApiResponse<Map<String, Object>>> getHelp() {
         Map<String, Object> helpData = new HashMap<>();
         
-        helpData.put("contactEmail", "support@securebanking.com");
+        helpData.put("contactEmail", "support@reuelbanking.com");
         helpData.put("contactPhone", "+1-800-123-4567");
         helpData.put("supportHours", "Monday - Friday: 9:00 AM - 6:00 PM EST");
         

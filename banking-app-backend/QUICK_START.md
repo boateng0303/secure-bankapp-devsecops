@@ -37,7 +37,7 @@ curl -X POST http://localhost:8080/api/auth/register \
     "firstName": "John",
     "lastName": "Doe",
     "email": "john@example.com",
-    "password": "SecurePass123!",
+    "password": "SecurePass123@",
     "phoneNumber": "+1234567890",
     "address": "123 Main St"
   }'
@@ -51,7 +51,7 @@ curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "john@example.com",
-    "password": "SecurePass123!"
+    "password": "SecurePass123@"
   }'
 ```
 

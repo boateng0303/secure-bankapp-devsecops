@@ -323,6 +323,8 @@
             </select>
             <p *ngIf="internalTransferForm.get('toAccountId')?.invalid && internalTransferForm.get('toAccountId')?.touched" 
                class="mt-1 text-sm text-danger-600">To account is required</p>
+            <p *ngIf="internalTransferForm.hasError('sameAccount') && internalTransferForm.get('toAccountId')?.touched" 
+               class="mt-1 text-sm text-danger-600">Cannot transfer to the same account</p>
           </div>
 
           <div>

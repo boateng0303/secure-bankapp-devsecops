@@ -39,7 +39,7 @@ export class HelpComponent implements OnInit {
 
   getFallbackData(): any {
     return {
-      contactEmail: 'support@securebanking.com',
+      contactEmail: 'support@reuelbanking.com',
       contactPhone: '+1-800-123-4567',
       supportHours: 'Monday - Friday: 9:00 AM - 6:00 PM EST',
       faqs: {
