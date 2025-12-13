@@ -1,0 +1,429 @@
+<div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 py-8 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900">My Cards</h1>
+        <p class="text-gray-600 mt-1">Manage your debit, credit, and virtual cards</p>
+      </div>
+      <button 
+        (click)="openCreateModal()"
+        class="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        </svg>
+        Request New Card
+      </button>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <div *ngIf="success" class="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3">
+      <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+      </svg>
+      <span class="text-green-800">{{ success }}</span>
+    </div>
+
+    <div *ngIf="error" class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3">
+      <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      </svg>
+      <span class="text-red-800">{{ error }}</span>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="loading && cards.length === 0" class="text-center py-16">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+      <p class="mt-4 text-gray-600">Loading your cards...</p>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="!loading && cards.length === 0" class="text-center py-16 bg-white rounded-2xl shadow-sm">
+      <div class="w-24 h-24 bg-blue-100 rounded-full mx-auto flex items-center justify-center mb-6">
+        <svg class="w-12 h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+        </svg>
+      </div>
+      <h3 class="text-xl font-semibold text-gray-900 mb-2">No Cards Yet</h3>
+      <p class="text-gray-600 mb-6">Request your first card to start making payments</p>
+      <button 
+        (click)="openCreateModal()"
+        class="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors">
+        Request Your First Card
+      </button>
+    </div>
+
+    <!-- Cards Grid -->
+    <div *ngIf="cards.length > 0" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div *ngFor="let card of cards" class="relative">
+        <!-- Card Visual -->
+        <div 
+          class="relative h-56 rounded-2xl p-6 text-white shadow-xl overflow-hidden cursor-pointer transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl bg-gradient-to-br"
+          [ngClass]="getCardColor(card.cardType)"
+          (click)="openDetailsModal(card)">
+          
+          <!-- Background Pattern -->
+          <div class="absolute inset-0 opacity-10">
+            <div class="absolute -right-12 -top-12 w-48 h-48 rounded-full bg-white"></div>
+            <div class="absolute -left-12 -bottom-12 w-48 h-48 rounded-full bg-white"></div>
+          </div>
+
+          <!-- Card Content -->
+          <div class="relative z-10 h-full flex flex-col justify-between">
+            <!-- Top Row -->
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="text-xs uppercase tracking-wider opacity-75">{{ card.cardType }}</span>
+                <span *ngIf="card.isVirtual" class="ml-2 px-2 py-0.5 bg-white/20 rounded text-xs">Virtual</span>
+              </div>
+              <span 
+                class="px-2 py-1 rounded-full text-xs font-medium"
+                [ngClass]="card.status === 'ACTIVE' ? 'bg-white/20' : 'bg-red-500/80'">
+                {{ card.status }}
+              </span>
+            </div>
+
+            <!-- Chip -->
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-9 bg-gradient-to-br from-yellow-300 to-yellow-500 rounded-md"></div>
+              <svg class="w-8 h-8 opacity-50" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+              </svg>
+            </div>
+
+            <!-- Card Number -->
+            <div class="text-xl font-mono tracking-widest">
+              {{ card.maskedCardNumber }}
+            </div>
+
+            <!-- Bottom Row -->
+            <div class="flex justify-between items-end">
+              <div>
+                <div class="text-xs uppercase opacity-75">Card Holder</div>
+                <div class="font-medium">{{ card.cardHolderName }}</div>
+              </div>
+              <div class="text-right">
+                <div class="text-xs uppercase opacity-75">Expires</div>
+                <div class="font-medium">{{ formatExpiryDate(card.expiryDate) }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card Actions -->
+        <div class="mt-4 flex gap-2">
+          <button 
+            *ngIf="card.status === 'ACTIVE'"
+            (click)="openConfirmModal(card, 'block')"
+            class="flex-1 px-4 py-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-colors text-sm font-medium">
+            🔒 Block
+          </button>
+          <button 
+            *ngIf="card.status === 'BLOCKED'"
+            (click)="openConfirmModal(card, 'unblock')"
+            class="flex-1 px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-sm font-medium">
+            🔓 Unblock
+          </button>
+          <button 
+            *ngIf="card.status === 'ACTIVE'"
+            (click)="openLimitModal(card)"
+            class="flex-1 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm font-medium">
+            📊 Limit
+          </button>
+          <button 
+            *ngIf="card.status !== 'CANCELLED'"
+            (click)="openConfirmModal(card, 'cancel')"
+            class="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm font-medium">
+            ✕
+          </button>
+        </div>
+
+        <!-- Spending Info -->
+        <div class="mt-3 p-4 bg-white rounded-xl shadow-sm">
+          <div class="flex justify-between text-sm text-gray-600 mb-2">
+            <span>Spending Limit</span>
+            <span class="font-semibold text-gray-900">${{ card.spendingLimit | number:'1.2-2' }}</span>
+          </div>
+          <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div 
+              class="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-500"
+              [style.width.%]="(card.currentSpent / card.spendingLimit) * 100">
+            </div>
+          </div>
+          <div class="flex justify-between text-xs text-gray-500 mt-1">
+            <span>Spent: ${{ card.currentSpent | number:'1.2-2' }}</span>
+            <span>Available: ${{ card.availableLimit | number:'1.2-2' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create Card Modal -->
+<div *ngIf="showCreateModal" class="fixed inset-0 z-50 overflow-y-auto">
+  <div class="flex items-center justify-center min-h-screen px-4">
+    <div class="fixed inset-0 bg-black/50 transition-opacity" (click)="closeCreateModal()"></div>
+    
+    <div class="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 z-10">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-xl font-bold text-gray-900">Request New Card</h3>
+        <button (click)="closeCreateModal()" class="text-gray-400 hover:text-gray-600">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <form [formGroup]="createCardForm" (ngSubmit)="onCreateCard()">
+        <!-- Account Selection -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Link to Account</label>
+          <select 
+            formControlName="accountId"
+            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="">Select an account</option>
+            <option *ngFor="let account of accounts" [value]="account.id">
+              {{ account.accountType }} - {{ account.accountNumber }} (${{ account.balance | number:'1.2-2' }})
+            </option>
+          </select>
+        </div>
+
+        <!-- Card Type -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Card Type</label>
+          <div class="grid grid-cols-3 gap-3">
+            <div *ngFor="let type of cardTypes" 
+              class="relative flex flex-col items-center p-4 border-2 rounded-xl transition-all"
+              [ngClass]="{
+                'border-blue-500 bg-blue-50': createCardForm.value.cardType === type.value && !isCardTypeDisabled(type.value),
+                'border-gray-200 hover:border-gray-300 cursor-pointer': !isCardTypeDisabled(type.value) && createCardForm.value.cardType !== type.value,
+                'border-gray-200 bg-gray-100 opacity-60 cursor-not-allowed': isCardTypeDisabled(type.value)
+              }"
+              [title]="getCardTypeTooltip(type.value)"
+              (click)="!isCardTypeDisabled(type.value) && createCardForm.patchValue({cardType: type.value})">
+              <span class="text-2xl mb-1">{{ type.icon }}</span>
+              <span class="text-sm font-medium" 
+                    [ngClass]="isCardTypeDisabled(type.value) ? 'text-gray-400' : 'text-gray-700'">
+                {{ type.label }}
+              </span>
+              <!-- Badge for disabled card types -->
+              <span *ngIf="isCardTypeDisabled(type.value) && type.value !== 'VIRTUAL'" 
+                    class="absolute -top-2 -right-2 bg-orange-500 text-white text-xs px-2 py-0.5 rounded-full">
+                Active
+              </span>
+              <span *ngIf="isCardTypeDisabled(type.value) && type.value === 'VIRTUAL'" 
+                    class="absolute -top-2 -right-2 bg-gray-500 text-white text-xs px-2 py-0.5 rounded-full">
+                N/A
+              </span>
+            </div>
+          </div>
+          <!-- Info messages based on disabled types -->
+          <div *ngIf="disabledCardTypes.includes('VIRTUAL') && disabledCardTypes.includes('DEBIT')" 
+               class="mt-2 p-2 bg-blue-50 rounded-lg">
+            <p class="text-xs text-blue-700">
+              <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <strong>Virtual cards</strong> are only available when you don't have a Debit card. 
+              Your active Debit card provides all the functionality you need.
+            </p>
+          </div>
+          <p *ngIf="disabledCardTypes.length > 0 && !disabledCardTypes.includes('VIRTUAL')" class="mt-2 text-xs text-gray-500">
+            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            Card types marked "Active" already exist. Request a new one after expiry.
+          </p>
+        </div>
+
+        <!-- Spending Limit -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Spending Limit ($)</label>
+          <input 
+            type="number"
+            formControlName="spendingLimit"
+            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            placeholder="5000">
+        </div>
+
+        <!-- Virtual Card Toggle -->
+        <div class="mb-6">
+          <label class="flex items-center gap-3 cursor-pointer">
+            <input 
+              type="checkbox" 
+              formControlName="isVirtual"
+              class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+            <span class="text-sm text-gray-700">Issue as Virtual Card (for online use only)</span>
+          </label>
+        </div>
+
+        <!-- Submit Button -->
+        <button 
+          type="submit"
+          [disabled]="createCardForm.invalid || loading"
+          class="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-medium hover:from-blue-700 hover:to-blue-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+          {{ loading ? 'Creating...' : 'Request Card' }}
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Card Details Modal -->
+<div *ngIf="showDetailsModal && selectedCard" class="fixed inset-0 z-50 overflow-y-auto">
+  <div class="flex items-center justify-center min-h-screen px-4">
+    <div class="fixed inset-0 bg-black/50 transition-opacity" (click)="closeDetailsModal()"></div>
+    
+    <div class="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 z-10">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-xl font-bold text-gray-900">Card Details</h3>
+        <button (click)="closeDetailsModal()" class="text-gray-400 hover:text-gray-600">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <div class="space-y-4">
+        <div class="flex justify-between py-2 border-b border-gray-100">
+          <span class="text-gray-600">Card Number</span>
+          <span class="font-mono font-medium">{{ formatCardNumber(selectedCard.cardNumber) }}</span>
+        </div>
+        <div class="flex justify-between py-2 border-b border-gray-100">
+          <span class="text-gray-600">Card Holder</span>
+          <span class="font-medium">{{ selectedCard.cardHolderName }}</span>
+        </div>
+        <div class="flex justify-between py-2 border-b border-gray-100">
+          <span class="text-gray-600">Card Type</span>
+          <span class="font-medium">{{ selectedCard.cardType }}</span>
+        </div>
+        <div class="flex justify-between py-2 border-b border-gray-100">
+          <span class="text-gray-600">Expiry Date</span>
+          <span class="font-medium">{{ formatExpiryDate(selectedCard.expiryDate) }}</span>
+        </div>
+        <div class="flex justify-between py-2 border-b border-gray-100">
+          <span class="text-gray-600">Linked Account</span>
+          <span class="font-medium">{{ selectedCard.accountNumber }}</span>
+        </div>
+        <div class="flex justify-between py-2 border-b border-gray-100">
+          <span class="text-gray-600">Status</span>
+          <span 
+            class="px-2 py-1 rounded-full text-xs font-medium"
+            [ngClass]="getStatusColor(selectedCard.status)">
+            {{ selectedCard.status }}
+          </span>
+        </div>
+        <div class="flex justify-between py-2 border-b border-gray-100">
+          <span class="text-gray-600">Spending Limit</span>
+          <span class="font-medium">${{ selectedCard.spendingLimit | number:'1.2-2' }}</span>
+        </div>
+        <div class="flex justify-between py-2">
+          <span class="text-gray-600">Available</span>
+          <span class="font-medium text-green-600">${{ selectedCard.availableLimit | number:'1.2-2' }}</span>
+        </div>
+      </div>
+
+      <button 
+        (click)="closeDetailsModal()"
+        class="w-full mt-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors">
+        Close
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Update Limit Modal -->
+<div *ngIf="showLimitModal && selectedCard" class="fixed inset-0 z-50 overflow-y-auto">
+  <div class="flex items-center justify-center min-h-screen px-4">
+    <div class="fixed inset-0 bg-black/50 transition-opacity" (click)="closeLimitModal()"></div>
+    
+    <div class="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 z-10">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-xl font-bold text-gray-900">Update Spending Limit</h3>
+        <button (click)="closeLimitModal()" class="text-gray-400 hover:text-gray-600">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <p class="text-gray-600 mb-4">
+        Card ending in <span class="font-mono font-medium">{{ selectedCard.cardNumber.slice(-4) }}</span>
+      </p>
+
+      <form [formGroup]="updateLimitForm" (ngSubmit)="onUpdateLimit()">
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-700 mb-2">New Spending Limit ($)</label>
+          <input 
+            type="number"
+            formControlName="newLimit"
+            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Enter new limit">
+          <p class="mt-2 text-sm text-gray-500">Current limit: ${{ selectedCard.spendingLimit | number:'1.2-2' }}</p>
+        </div>
+
+        <div class="flex gap-3">
+          <button 
+            type="button"
+            (click)="closeLimitModal()"
+            class="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors">
+            Cancel
+          </button>
+          <button 
+            type="submit"
+            [disabled]="updateLimitForm.invalid || loading"
+            class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-50">
+            {{ loading ? 'Updating...' : 'Update Limit' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Action Modal -->
+<div *ngIf="showConfirmModal && selectedCard && confirmAction" class="fixed inset-0 z-50 overflow-y-auto">
+  <div class="flex items-center justify-center min-h-screen px-4">
+    <div class="fixed inset-0 bg-black/50 transition-opacity" (click)="closeConfirmModal()"></div>
+    
+    <div class="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 z-10">
+      <div class="text-center mb-6">
+        <div 
+          class="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center"
+          [ngClass]="confirmAction === 'cancel' ? 'bg-red-100' : confirmAction === 'block' ? 'bg-orange-100' : 'bg-green-100'">
+          <span class="text-3xl">
+            {{ confirmAction === 'cancel' ? '🗑️' : confirmAction === 'block' ? '🔒' : '🔓' }}
+          </span>
+        </div>
+        <h3 class="text-xl font-bold text-gray-900 capitalize">{{ confirmAction }} Card?</h3>
+        <p class="text-gray-600 mt-2">
+          <ng-container [ngSwitch]="confirmAction">
+            <span *ngSwitchCase="'block'">This will temporarily block your card. You can unblock it later.</span>
+            <span *ngSwitchCase="'unblock'">This will reactivate your card for use.</span>
+            <span *ngSwitchCase="'cancel'">This action is permanent. The card will be cancelled and cannot be recovered.</span>
+          </ng-container>
+        </p>
+        <p class="text-sm text-gray-500 mt-2 font-mono">
+          Card ending in {{ selectedCard.cardNumber.slice(-4) }}
+        </p>
+      </div>
+
+      <div class="flex gap-3">
+        <button 
+          (click)="closeConfirmModal()"
+          class="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors">
+          Cancel
+        </button>
+        <button 
+          (click)="onConfirmAction()"
+          [disabled]="loading"
+          class="flex-1 py-3 rounded-xl font-medium transition-colors disabled:opacity-50 capitalize"
+          [ngClass]="confirmAction === 'cancel' ? 'bg-red-600 hover:bg-red-700 text-white' : confirmAction === 'block' ? 'bg-orange-600 hover:bg-orange-700 text-white' : 'bg-green-600 hover:bg-green-700 text-white'">
+          {{ loading ? 'Processing...' : confirmAction }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+

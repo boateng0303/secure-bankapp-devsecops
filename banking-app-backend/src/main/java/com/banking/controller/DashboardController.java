@@ -182,9 +182,12 @@ public class DashboardController {
                           account.getAccountType().name().substring(1).toLowerCase();
             labels.add(label);
             balances.add(account.getBalance());
-            // Store last 4 digits of account number
+            // Store last 4 digits of account number (or full number if less than 4 chars)
             String accNum = account.getAccountNumber();
-            accountNumbers.add("****" + accNum.substring(accNum.length() - 4));
+            String maskedAccNum = accNum.length() >= 4 
+                    ? "****" + accNum.substring(accNum.length() - 4)
+                    : "****" + accNum;
+            accountNumbers.add(maskedAccNum);
         }
         
         return TransactionAnalytics.AccountDistribution.builder()
@@ -210,22 +213,23 @@ public class DashboardController {
         
         // Get last 6 months
         for (int i = 5; i >= 0; i--) {
-            LocalDateTime monthStart = now.minusMonths(i).withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0);
-            LocalDateTime monthEnd = monthStart.plusMonths(1).minusSeconds(1);
+            LocalDateTime monthStart = now.minusMonths(i).withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+            LocalDateTime nextMonthStart = monthStart.plusMonths(1);
             
             String monthLabel = monthStart.format(DateTimeFormatter.ofPattern("MMM yyyy"));
             labels.add(monthLabel);
             
             // Calculate net change for this month (income - expenses)
+            // Use !isBefore for start (inclusive) and isBefore for end (exclusive)
             BigDecimal monthIncome = transactions.stream()
-                    .filter(t -> t.getCreatedAt().isAfter(monthStart) && t.getCreatedAt().isBefore(monthEnd))
+                    .filter(t -> !t.getCreatedAt().isBefore(monthStart) && t.getCreatedAt().isBefore(nextMonthStart))
                     .filter(t -> t.getType() == Transaction.TransactionType.DEPOSIT || 
                                 t.getType() == Transaction.TransactionType.TRANSFER_IN)
                     .map(Transaction::getAmount)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
             
             BigDecimal monthExpenses = transactions.stream()
-                    .filter(t -> t.getCreatedAt().isAfter(monthStart) && t.getCreatedAt().isBefore(monthEnd))
+                    .filter(t -> !t.getCreatedAt().isBefore(monthStart) && t.getCreatedAt().isBefore(nextMonthStart))
                     .filter(t -> t.getType() == Transaction.TransactionType.WITHDRAWAL || 
                                 t.getType() == Transaction.TransactionType.TRANSFER_OUT)
                     .map(Transaction::getAmount)
