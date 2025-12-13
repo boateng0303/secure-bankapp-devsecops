@@ -41,6 +41,7 @@ export interface WithdrawalRequest {
   amount: number;
   withdrawalMethod?: string;
   description?: string;
+  cardId?: number; // Optional: Card used for ATM withdrawal
 }
 
 

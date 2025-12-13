@@ -176,6 +176,110 @@ export class TransactionChartsComponent implements OnInit {
 
   public barChartType: ChartType = 'bar';
 
+  // Polar Area Chart: Account Balance Distribution
+  public polarChartData: ChartData<'polarArea'> = {
+    labels: [],
+    datasets: [{
+      data: [],
+      backgroundColor: [
+        'rgba(59, 130, 246, 0.8)',   // Blue
+        'rgba(34, 197, 94, 0.8)',    // Green
+        'rgba(168, 85, 247, 0.8)',   // Purple
+        'rgba(249, 115, 22, 0.8)',   // Orange
+        'rgba(236, 72, 153, 0.8)',   // Pink
+        'rgba(20, 184, 166, 0.8)'    // Teal
+      ],
+      borderWidth: 2,
+      borderColor: '#fff'
+    }]
+  };
+
+  public polarChartOptions: ChartConfiguration['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true,
+        position: 'bottom'
+      },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            const label = context.label || '';
+            const value = context.parsed?.r ?? 0;
+            const dataset = context.dataset.data as number[];
+            const total = dataset.reduce((a: number, b: number) => a + b, 0);
+            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
+            return `${label}: $${value.toLocaleString('en-US', { minimumFractionDigits: 2 })} (${percentage}%)`;
+          }
+        }
+      }
+    },
+    scales: {
+      r: {
+        ticks: {
+          display: false
+        }
+      }
+    }
+  };
+
+  public polarChartType: ChartType = 'polarArea';
+
+  // Area Chart: Balance Over Time
+  public areaChartData: ChartConfiguration['data'] = {
+    labels: [],
+    datasets: [{
+      data: [],
+      label: 'Total Balance',
+      backgroundColor: 'rgba(99, 102, 241, 0.3)',
+      borderColor: 'rgba(99, 102, 241, 1)',
+      pointBackgroundColor: 'rgba(99, 102, 241, 1)',
+      pointBorderColor: '#fff',
+      pointHoverBackgroundColor: '#fff',
+      pointHoverBorderColor: 'rgba(99, 102, 241, 1)',
+      pointRadius: 6,
+      pointHoverRadius: 8,
+      fill: true,
+      tension: 0.4
+    }]
+  };
+
+  public areaChartOptions: ChartConfiguration['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false
+      },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            const value = context.parsed?.y ?? 0;
+            return `Balance: $${value.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+          }
+        }
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          callback: function(value) {
+            return '$' + Number(value).toLocaleString();
+          }
+        }
+      }
+    },
+    interaction: {
+      mode: 'nearest',
+      axis: 'x',
+      intersect: false
+    }
+  };
+
+  public areaChartType: ChartType = 'line';
+
   constructor(private dashboardService: DashboardService) {}
 
   ngOnInit(): void {
@@ -190,6 +294,8 @@ export class TransactionChartsComponent implements OnInit {
         this.updateLineChart(data.monthlyData);
         this.updateDoughnutChart(data.typeDistribution);
         this.updateBarChart(data.dailyCashFlow);
+        this.updatePolarChart(data.accountDistribution);
+        this.updateAreaChart(data.balanceHistory);
         this.loading = false;
       },
       error: (error) => {
@@ -229,6 +335,24 @@ export class TransactionChartsComponent implements OnInit {
     
     this.barChartData.datasets[0].backgroundColor = colors;
     this.barChartData.datasets[0].borderColor = borderColors;
+  }
+
+  private updatePolarChart(accountDistribution: any): void {
+    if (accountDistribution) {
+      // Create labels with account type and last 4 digits
+      const labels = accountDistribution.labels.map((label: string, index: number) => {
+        return `${label} ${accountDistribution.accountNumbers[index]}`;
+      });
+      this.polarChartData.labels = labels;
+      this.polarChartData.datasets[0].data = accountDistribution.balances;
+    }
+  }
+
+  private updateAreaChart(balanceHistory: any): void {
+    if (balanceHistory) {
+      this.areaChartData.labels = balanceHistory.labels;
+      this.areaChartData.datasets[0].data = balanceHistory.totalBalance;
+    }
   }
 }
 

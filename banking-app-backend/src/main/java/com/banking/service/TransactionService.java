@@ -5,10 +5,12 @@ import com.banking.dto.request.InternalTransferRequest;
 import com.banking.dto.request.TransferRequest;
 import com.banking.dto.request.WithdrawalRequest;
 import com.banking.entity.Account;
+import com.banking.entity.Card;
 import com.banking.entity.Transaction;
 import com.banking.exception.BadRequestException;
 import com.banking.exception.InsufficientBalanceException;
 import com.banking.exception.ResourceNotFoundException;
+import com.banking.repository.CardRepository;
 import com.banking.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -27,6 +29,7 @@ public class TransactionService {
 
     private final TransactionRepository transactionRepository;
     private final AccountService accountService;
+    private final CardRepository cardRepository;
 
     public Transaction getTransactionById(Long id) {
         return transactionRepository.findById(id)
@@ -96,23 +99,72 @@ public class TransactionService {
             throw new InsufficientBalanceException("Insufficient balance for this withdrawal");
         }
 
+        // Handle ATM withdrawal - update card spending
+        Card usedCard = null;
+        if ("ATM".equalsIgnoreCase(request.getWithdrawalMethod())) {
+            usedCard = findCardForAtmWithdrawal(request, account, userId);
+            
+            if (usedCard != null) {
+                // Check if withdrawal exceeds available card limit
+                BigDecimal availableLimit = usedCard.getSpendingLimit().subtract(usedCard.getCurrentSpent());
+                if (request.getAmount().compareTo(availableLimit) > 0) {
+                    throw new BadRequestException("Withdrawal exceeds card spending limit. Available: $" + availableLimit);
+                }
+                
+                // Update card's current spent
+                BigDecimal newSpent = usedCard.getCurrentSpent().add(request.getAmount());
+                usedCard.setCurrentSpent(newSpent);
+                cardRepository.save(usedCard);
+            }
+        }
+
         // Update balance
         BigDecimal newBalance = account.getBalance().subtract(request.getAmount());
         accountService.updateBalance(account, newBalance);
 
         // Create transaction record
+        String description = request.getDescription() != null ? request.getDescription() : 
+                ("ATM".equalsIgnoreCase(request.getWithdrawalMethod()) ? "ATM Withdrawal" : "Withdrawal");
+        
         Transaction transaction = Transaction.builder()
                 .transactionReference(generateTransactionReference())
                 .type(Transaction.TransactionType.WITHDRAWAL)
                 .amount(request.getAmount())
                 .balanceAfter(newBalance)
-                .description(request.getDescription() != null ? request.getDescription() : "Withdrawal")
+                .description(description)
                 .status(Transaction.TransactionStatus.COMPLETED)
                 .account(account)
-                .depositMethod(request.getWithdrawalMethod()) // Reusing depositMethod field for withdrawal method
+                .depositMethod(request.getWithdrawalMethod())
                 .build();
 
         return transactionRepository.save(transaction);
+    }
+
+    private Card findCardForAtmWithdrawal(WithdrawalRequest request, Account account, Long userId) {
+        // If specific card ID provided, use that
+        if (request.getCardId() != null) {
+            Card card = cardRepository.findById(request.getCardId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Card not found"));
+            
+            if (!card.getUser().getId().equals(userId)) {
+                throw new BadRequestException("Card does not belong to user");
+            }
+            if (!card.getAccount().getId().equals(account.getId())) {
+                throw new BadRequestException("Card is not linked to this account");
+            }
+            if (card.getStatus() != Card.CardStatus.ACTIVE) {
+                throw new BadRequestException("Card is not active");
+            }
+            
+            return card;
+        }
+        
+        // Auto-find an active DEBIT card for this account
+        return cardRepository.findFirstByAccountIdAndCardTypeAndStatus(
+                account.getId(), 
+                Card.CardType.DEBIT, 
+                Card.CardStatus.ACTIVE
+        ).orElse(null); // Return null if no card found (withdrawal still proceeds without card tracking)
     }
 
     @Transactional

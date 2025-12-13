@@ -88,5 +88,50 @@
     </div>
   </div>
 
+  <!-- Account Balance Distribution Polar Chart -->
+  <div class="bg-white rounded-xl shadow-soft p-6">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h3 class="text-lg font-bold text-gray-900">Account Distribution</h3>
+        <p class="text-sm text-gray-600">Balance across your accounts</p>
+      </div>
+      <div class="p-2 bg-purple-50 rounded-lg">
+        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path>
+        </svg>
+      </div>
+    </div>
+    <div class="h-80 flex items-center justify-center">
+      <canvas baseChart
+              [data]="polarChartData"
+              [options]="polarChartOptions"
+              [type]="polarChartType">
+      </canvas>
+    </div>
+  </div>
+
+  <!-- Balance Over Time Area Chart -->
+  <div class="bg-white rounded-xl shadow-soft p-6">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h3 class="text-lg font-bold text-gray-900">Balance Over Time</h3>
+        <p class="text-sm text-gray-600">Total balance trend (last 6 months)</p>
+      </div>
+      <div class="p-2 bg-indigo-50 rounded-lg">
+        <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+        </svg>
+      </div>
+    </div>
+    <div class="h-80">
+      <canvas baseChart
+              [data]="areaChartData"
+              [options]="areaChartOptions"
+              [type]="areaChartType">
+      </canvas>
+    </div>
+  </div>
+
 </div>
 

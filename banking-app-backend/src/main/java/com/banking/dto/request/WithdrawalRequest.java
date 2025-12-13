@@ -25,5 +25,7 @@ public class WithdrawalRequest {
     private String description;
     
     private String withdrawalMethod; // ATM, BRANCH, ONLINE
+    
+    private Long cardId; // Optional: Card used for ATM withdrawal
 }
 

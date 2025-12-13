@@ -13,6 +13,7 @@ import { ProfileComponent } from './features/profile/profile.component';
 import { HelpComponent } from './features/help/help.component';
 import { AccountsComponent } from './features/accounts/accounts.component';
 import { BeneficiariesComponent } from './features/beneficiaries/beneficiaries.component';
+import { CardsComponent } from './features/cards/cards.component';
 
 const routes: Routes = [
   // Public routes
@@ -49,6 +50,11 @@ const routes: Routes = [
   { 
     path: 'beneficiaries', 
     component: BeneficiariesComponent,
+    canActivate: [AuthGuard]
+  },
+  { 
+    path: 'cards', 
+    component: CardsComponent,
     canActivate: [AuthGuard]
   },
   { 

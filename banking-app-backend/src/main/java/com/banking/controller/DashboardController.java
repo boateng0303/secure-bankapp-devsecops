@@ -66,11 +66,14 @@ public class DashboardController {
     @GetMapping("/analytics")
     public ResponseEntity<ApiResponse<TransactionAnalytics>> getTransactionAnalytics(@AuthenticationPrincipal User user) {
         List<Transaction> allTransactions = transactionService.getTransactionsByUserId(user.getId());
+        List<Account> accounts = accountService.getAccountsByUserId(user.getId());
         
         TransactionAnalytics analytics = TransactionAnalytics.builder()
                 .monthlyData(calculateMonthlyData(allTransactions))
                 .typeDistribution(calculateTypeDistribution(allTransactions))
                 .dailyCashFlow(calculateDailyCashFlow(allTransactions))
+                .accountDistribution(calculateAccountDistribution(accounts))
+                .balanceHistory(calculateBalanceHistory(allTransactions, accounts))
                 .build();
         
         return ResponseEntity.ok(ApiResponse.success("Analytics retrieved successfully", analytics));
@@ -165,6 +168,93 @@ public class DashboardController {
         return TransactionAnalytics.DailyCashFlow.builder()
                 .labels(labels)
                 .netFlow(netFlow)
+                .build();
+    }
+
+    private TransactionAnalytics.AccountDistribution calculateAccountDistribution(List<Account> accounts) {
+        List<String> labels = new ArrayList<>();
+        List<BigDecimal> balances = new ArrayList<>();
+        List<String> accountNumbers = new ArrayList<>();
+        
+        for (Account account : accounts) {
+            // Create label with account type
+            String label = account.getAccountType().name().charAt(0) + 
+                          account.getAccountType().name().substring(1).toLowerCase();
+            labels.add(label);
+            balances.add(account.getBalance());
+            // Store last 4 digits of account number
+            String accNum = account.getAccountNumber();
+            accountNumbers.add("****" + accNum.substring(accNum.length() - 4));
+        }
+        
+        return TransactionAnalytics.AccountDistribution.builder()
+                .labels(labels)
+                .balances(balances)
+                .accountNumbers(accountNumbers)
+                .build();
+    }
+
+    private TransactionAnalytics.BalanceHistory calculateBalanceHistory(List<Transaction> transactions, List<Account> accounts) {
+        LocalDateTime now = LocalDateTime.now();
+        List<String> labels = new ArrayList<>();
+        List<BigDecimal> totalBalances = new ArrayList<>();
+        
+        // Calculate current total balance
+        BigDecimal currentTotalBalance = accounts.stream()
+                .map(Account::getBalance)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        
+        // We'll work backwards from current balance
+        // For each month, calculate what the balance was at end of that month
+        List<BigDecimal> monthlyChanges = new ArrayList<>();
+        
+        // Get last 6 months
+        for (int i = 5; i >= 0; i--) {
+            LocalDateTime monthStart = now.minusMonths(i).withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0);
+            LocalDateTime monthEnd = monthStart.plusMonths(1).minusSeconds(1);
+            
+            String monthLabel = monthStart.format(DateTimeFormatter.ofPattern("MMM yyyy"));
+            labels.add(monthLabel);
+            
+            // Calculate net change for this month (income - expenses)
+            BigDecimal monthIncome = transactions.stream()
+                    .filter(t -> t.getCreatedAt().isAfter(monthStart) && t.getCreatedAt().isBefore(monthEnd))
+                    .filter(t -> t.getType() == Transaction.TransactionType.DEPOSIT || 
+                                t.getType() == Transaction.TransactionType.TRANSFER_IN)
+                    .map(Transaction::getAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            
+            BigDecimal monthExpenses = transactions.stream()
+                    .filter(t -> t.getCreatedAt().isAfter(monthStart) && t.getCreatedAt().isBefore(monthEnd))
+                    .filter(t -> t.getType() == Transaction.TransactionType.WITHDRAWAL || 
+                                t.getType() == Transaction.TransactionType.TRANSFER_OUT)
+                    .map(Transaction::getAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            
+            BigDecimal netChange = monthIncome.subtract(monthExpenses);
+            monthlyChanges.add(netChange);
+        }
+        
+        // Calculate balance at end of each month by working backwards from current
+        // Current month (index 5) ends with currentTotalBalance
+        // Previous months can be calculated by subtracting subsequent month changes
+        BigDecimal runningBalance = currentTotalBalance;
+        BigDecimal[] balanceArray = new BigDecimal[6];
+        balanceArray[5] = currentTotalBalance;
+        
+        for (int i = 4; i >= 0; i--) {
+            // Balance at end of month i = balance at end of month (i+1) - change in month (i+1)
+            runningBalance = runningBalance.subtract(monthlyChanges.get(i + 1));
+            balanceArray[i] = runningBalance.max(BigDecimal.ZERO); // Ensure non-negative
+        }
+        
+        for (BigDecimal balance : balanceArray) {
+            totalBalances.add(balance);
+        }
+        
+        return TransactionAnalytics.BalanceHistory.builder()
+                .labels(labels)
+                .totalBalance(totalBalances)
                 .build();
     }
 

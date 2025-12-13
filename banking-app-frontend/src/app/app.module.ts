@@ -28,6 +28,7 @@ import { HelpComponent } from './features/help/help.component';
 import { TransactionChartsComponent } from './features/dashboard/transaction-charts/transaction-charts.component';
 import { AccountsComponent } from './features/accounts/accounts.component';
 import { BeneficiariesComponent } from './features/beneficiaries/beneficiaries.component';
+import { CardsComponent } from './features/cards/cards.component';
 
 @NgModule({
   declarations: [
@@ -43,7 +44,8 @@ import { BeneficiariesComponent } from './features/beneficiaries/beneficiaries.c
     HelpComponent,
     TransactionChartsComponent,
     AccountsComponent,
-    BeneficiariesComponent
+    BeneficiariesComponent,
+    CardsComponent
   ],
   imports: [
     BrowserModule,

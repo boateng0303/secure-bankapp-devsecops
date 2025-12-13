@@ -3,8 +3,10 @@ import { AbstractControl, FormBuilder, FormGroup, ValidationErrors, Validators }
 import { TransactionService } from '../../core/services/transaction.service';
 import { AccountService } from '../../core/services/account.service';
 import { BeneficiaryService } from '../../core/services/beneficiary.service';
+import { CardService } from '../../core/services/card.service';
 import { Account } from '../../shared/models/account.model';
 import { Beneficiary } from '../../shared/models/beneficiary.model';
+import { Card } from '../../shared/models/card.model';
 
 @Component({
   selector: 'app-money',
@@ -15,6 +17,8 @@ export class MoneyComponent implements OnInit {
   selectedTab = 0;
   accounts: Account[] = [];
   beneficiaries: Beneficiary[] = [];
+  cards: Card[] = [];
+  accountCards: Card[] = []; // Cards filtered by selected account
   
   depositForm!: FormGroup;
   withdrawalForm!: FormGroup;
@@ -32,13 +36,16 @@ export class MoneyComponent implements OnInit {
     private fb: FormBuilder,
     private transactionService: TransactionService,
     private accountService: AccountService,
-    private beneficiaryService: BeneficiaryService
+    private beneficiaryService: BeneficiaryService,
+    private cardService: CardService
   ) {}
 
   ngOnInit(): void {
     this.initializeForms();
     this.loadAccounts();
     this.loadBeneficiaries();
+    this.loadCards();
+    this.setupWithdrawalFormListeners();
   }
 
   initializeForms(): void {
@@ -53,7 +60,8 @@ export class MoneyComponent implements OnInit {
       accountId: ['', Validators.required],
       amount: ['', [Validators.required, Validators.min(0.01)]],
       withdrawalMethod: ['', Validators.required],
-      description: ['']
+      description: [''],
+      cardId: ['']
     });
 
     this.transferForm = this.fb.group({
@@ -93,6 +101,56 @@ export class MoneyComponent implements OnInit {
     });
   }
 
+  loadCards(): void {
+    this.cardService.getActiveCards().subscribe({
+      next: (response) => {
+        this.cards = response.data || [];
+      },
+      error: (error) => {
+        console.error('Failed to load cards', error);
+      }
+    });
+  }
+
+  setupWithdrawalFormListeners(): void {
+    // When account or withdrawal method changes, filter available cards
+    this.withdrawalForm.get('accountId')?.valueChanges.subscribe(() => {
+      this.filterCardsForAccount();
+    });
+    
+    this.withdrawalForm.get('withdrawalMethod')?.valueChanges.subscribe((method) => {
+      if (method === 'ATM') {
+        this.filterCardsForAccount();
+      } else {
+        this.withdrawalForm.patchValue({ cardId: '' });
+        this.accountCards = [];
+      }
+    });
+  }
+
+  filterCardsForAccount(): void {
+    const accountId = +this.withdrawalForm.get('accountId')?.value;
+    const method = this.withdrawalForm.get('withdrawalMethod')?.value;
+    
+    if (accountId && method === 'ATM') {
+      this.accountCards = this.cards.filter(
+        card => card.accountId === accountId && card.status === 'ACTIVE'
+      );
+      // Reset card selection
+      this.withdrawalForm.patchValue({ cardId: '' });
+    } else {
+      this.accountCards = [];
+    }
+  }
+
+  isAtmSelected(): boolean {
+    return this.withdrawalForm.get('withdrawalMethod')?.value === 'ATM';
+  }
+
+  getCardAvailableLimit(card: Card): number {
+    return card.spendingLimit - card.currentSpent;
+  }
+
   onDeposit(): void {
     if (this.depositForm.invalid) return;
 
@@ -121,15 +179,30 @@ export class MoneyComponent implements OnInit {
     this.error = '';
     this.success = '';
 
-    this.transactionService.withdraw(this.withdrawalForm.value).subscribe({
+    const formValue = this.withdrawalForm.value;
+    const request: any = {
+      accountId: +formValue.accountId,
+      amount: +formValue.amount,
+      withdrawalMethod: formValue.withdrawalMethod,
+      description: formValue.description || undefined
+    };
+    
+    // Include cardId only if ATM and card is selected
+    if (formValue.withdrawalMethod === 'ATM' && formValue.cardId) {
+      request.cardId = +formValue.cardId;
+    }
+
+    this.transactionService.withdraw(request).subscribe({
       next: (response) => {
         this.success = 'Withdrawal successful!';
         this.withdrawalForm.reset();
+        this.accountCards = [];
         this.loading = false;
         this.loadAccounts(); // Refresh accounts
+        this.loadCards(); // Refresh cards to update spending
       },
       error: (error) => {
-        this.error = error.message || 'Withdrawal failed';
+        this.error = error.error?.message || error.message || 'Withdrawal failed';
         this.loading = false;
       }
     });
