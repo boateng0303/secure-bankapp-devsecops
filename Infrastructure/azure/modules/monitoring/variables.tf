@@ -138,8 +138,8 @@ variable "aks_cluster_id" {
   default     = null
 }
 
-variable "postgresql_server_id" {
-  description = "PostgreSQL server ID for metric alerts"
+variable "mysql_server_id" {
+  description = "MySQL server ID for metric alerts"
   type        = string
   default     = null
 }

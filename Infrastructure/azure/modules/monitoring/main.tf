@@ -236,20 +236,20 @@ resource "azurerm_monitor_metric_alert" "aks_node_not_ready" {
   tags = var.tags
 }
 
-resource "azurerm_monitor_metric_alert" "postgresql_cpu" {
-  count = var.postgresql_server_id != null ? 1 : 0
+resource "azurerm_monitor_metric_alert" "mysql_cpu" {
+  count = var.mysql_server_id != null ? 1 : 0
 
-  name                = "${var.prefix}-postgresql-cpu-alert"
+  name                = "${var.prefix}-mysql-cpu-alert"
   resource_group_name = var.resource_group_name
-  scopes              = [var.postgresql_server_id]
-  description         = "Alert when PostgreSQL CPU usage is high"
+  scopes              = [var.mysql_server_id]
+  description         = "Alert when MySQL CPU usage is high"
   severity            = 2
   frequency           = "PT5M"
   window_size         = "PT15M"
   auto_mitigate       = true
 
   criteria {
-    metric_namespace = "Microsoft.DBforPostgreSQL/flexibleServers"
+    metric_namespace = "Microsoft.DBforMySQL/flexibleServers"
     metric_name      = "cpu_percent"
     aggregation      = "Average"
     operator         = "GreaterThan"
@@ -263,20 +263,20 @@ resource "azurerm_monitor_metric_alert" "postgresql_cpu" {
   tags = var.tags
 }
 
-resource "azurerm_monitor_metric_alert" "postgresql_storage" {
-  count = var.postgresql_server_id != null ? 1 : 0
+resource "azurerm_monitor_metric_alert" "mysql_storage" {
+  count = var.mysql_server_id != null ? 1 : 0
 
-  name                = "${var.prefix}-postgresql-storage-alert"
+  name                = "${var.prefix}-mysql-storage-alert"
   resource_group_name = var.resource_group_name
-  scopes              = [var.postgresql_server_id]
-  description         = "Alert when PostgreSQL storage is running low"
+  scopes              = [var.mysql_server_id]
+  description         = "Alert when MySQL storage is running low"
   severity            = 2
   frequency           = "PT15M"
   window_size         = "PT1H"
   auto_mitigate       = true
 
   criteria {
-    metric_namespace = "Microsoft.DBforPostgreSQL/flexibleServers"
+    metric_namespace = "Microsoft.DBforMySQL/flexibleServers"
     metric_name      = "storage_percent"
     aggregation      = "Average"
     operator         = "GreaterThan"

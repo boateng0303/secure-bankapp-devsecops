@@ -44,7 +44,7 @@ infrastructure/azure/
 │   │   ├── main.tf
 │   │   ├── variables.tf
 │   │   └── outputs.tf
-│   ├── postgresql/                 # PostgreSQL Flexible Server
+│   ├── mysql/                      # MySQL Flexible Server
 │   │   ├── main.tf
 │   │   ├── variables.tf
 │   │   └── outputs.tf
@@ -141,7 +141,7 @@ infrastructure/azure/
 │  │  │   AKS Subnet    │  │  Database Subnet │  │  PE Subnet      │    │  │
 │  │  │                 │  │                  │  │                 │    │  │
 │  │  │  ┌───────────┐  │  │  ┌────────────┐  │  │ ┌─────────────┐ │    │  │
-│  │  │  │    AKS    │  │  │  │ PostgreSQL │  │  │ │Private      │ │    │  │
+│  │  │  │    AKS    │  │  │  │   MySQL    │  │  │ │Private      │ │    │  │
 │  │  │  │  Cluster  │◄─┼──┼──┤  Flexible  │  │  │ │Endpoints    │ │    │  │
 │  │  │  └───────────┘  │  │  │   Server   │  │  │ │             │ │    │  │
 │  │  │                 │  │  └────────────┘  │  │ │ • KeyVault  │ │    │  │
@@ -312,7 +312,7 @@ Scheduled every 6 hours:
 | AKS SKU | Free | Standard | Premium |
 | AKS Nodes | 1-3 | 2-8 | 3-20 |
 | Zone Redundancy | No | 2 zones | 3 zones |
-| PostgreSQL HA | Disabled | SameZone | ZoneRedundant |
+| MySQL HA | Disabled | SameZone | ZoneRedundant |
 | Geo Backup | No | No | Yes |
 | Private Cluster | No | Yes | Yes |
 | Key Vault | Standard | Standard | Premium |
@@ -401,8 +401,8 @@ az aks get-credentials -g <rg> -n <cluster>
 # List Key Vault secrets
 az keyvault secret list --vault-name <vault>
 
-# Check PostgreSQL connectivity
-az postgres flexible-server show-connection-string \
+# Check MySQL connectivity
+az mysql flexible-server show-connection-string \
   --server-name <server> \
   --database-name <db>
 ```

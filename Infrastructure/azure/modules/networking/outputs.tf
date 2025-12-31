@@ -32,9 +32,9 @@ output "private_endpoint_subnet_id" {
   value       = azurerm_subnet.private_endpoints.id
 }
 
-output "postgres_private_dns_zone_id" {
-  description = "The ID of the PostgreSQL private DNS zone"
-  value       = azurerm_private_dns_zone.postgres.id
+output "mysql_private_dns_zone_id" {
+  description = "The ID of the MySQL private DNS zone"
+  value       = azurerm_private_dns_zone.mysql.id
 }
 
 output "keyvault_private_dns_zone_id" {

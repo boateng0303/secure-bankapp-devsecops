@@ -59,7 +59,7 @@ resource "azurerm_subnet" "database" {
   delegation {
     name = "fs"
     service_delegation {
-      name = "Microsoft.DBforPostgreSQL/flexibleServers"
+      name = "Microsoft.DBforMySQL/flexibleServers"
       actions = [
         "Microsoft.Network/virtualNetworks/subnets/join/action",
       ]
@@ -147,14 +147,14 @@ resource "azurerm_network_security_group" "database" {
   tags = var.tags
 }
 
-resource "azurerm_network_security_rule" "db_postgres" {
-  name                        = "AllowPostgresFromAKS"
+resource "azurerm_network_security_rule" "db_mysql" {
+  name                        = "AllowMySQLFromAKS"
   priority                    = 100
   direction                   = "Inbound"
   access                      = "Allow"
   protocol                    = "Tcp"
   source_port_range           = "*"
-  destination_port_range      = "5432"
+  destination_port_range      = "3306"
   source_address_prefix       = var.aks_subnet_cidr
   destination_address_prefix  = "*"
   resource_group_name         = var.resource_group_name
@@ -282,10 +282,10 @@ resource "azurerm_private_dns_zone" "acr" {
   tags = var.tags
 }
 
-resource "azurerm_private_dns_zone_virtual_network_link" "postgres" {
-  name                  = "postgres-vnet-link"
+resource "azurerm_private_dns_zone_virtual_network_link" "mysql" {
+  name                  = "mysql-vnet-link"
   resource_group_name   = var.resource_group_name
-  private_dns_zone_name = azurerm_private_dns_zone.postgres.name
+  private_dns_zone_name = azurerm_private_dns_zone.mysql.name
   virtual_network_id    = azurerm_virtual_network.main.id
 
   tags = var.tags

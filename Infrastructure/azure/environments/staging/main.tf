@@ -233,22 +233,22 @@ module "aks" {
 }
 
 # -----------------------------------------------------------------------------
-# PostgreSQL
+# MySQL
 # -----------------------------------------------------------------------------
 
-module "postgresql" {
-  source = "../../modules/postgresql"
+module "mysql" {
+  source = "../../modules/mysql"
 
-  server_name         = "${local.prefix}-psql"
+  server_name         = "${local.prefix}-mysql"
   location            = local.location
   resource_group_name = module.resource_group.name
 
-  postgresql_version = "15"
-  sku_name           = "GP_Standard_D2s_v3"  # General Purpose for staging
-  storage_mb         = 65536
+  mysql_version   = "8.0.21"
+  sku_name        = "GP_Standard_D2ds_v4"  # General Purpose for staging
+  storage_size_gb = 64
 
   subnet_id           = module.networking.database_subnet_id
-  private_dns_zone_id = module.networking.postgres_private_dns_zone_id
+  private_dns_zone_id = module.networking.mysql_private_dns_zone_id
 
   # HA enabled for staging
   high_availability_mode    = "SameZone"
@@ -260,9 +260,6 @@ module "postgresql" {
 
   databases = ["bankingdb"]
 
-  enable_aad_auth = true
-  tenant_id       = data.azurerm_client_config.current.tenant_id
-
   log_analytics_workspace_id = module.monitoring.log_analytics_workspace_id
 
   tags = local.common_tags
@@ -272,17 +269,17 @@ module "postgresql" {
 # Store Secrets in Key Vault
 # -----------------------------------------------------------------------------
 
-resource "azurerm_key_vault_secret" "postgresql_admin_password" {
-  name         = "postgresql-admin-password"
-  value        = module.postgresql.administrator_password
+resource "azurerm_key_vault_secret" "mysql_admin_password" {
+  name         = "mysql-admin-password"
+  value        = module.mysql.administrator_password
   key_vault_id = module.keyvault.id
 
   depends_on = [module.keyvault]
 }
 
-resource "azurerm_key_vault_secret" "postgresql_connection_string" {
-  name         = "postgresql-connection-string"
-  value        = module.postgresql.connection_string
+resource "azurerm_key_vault_secret" "mysql_connection_string" {
+  name         = "mysql-connection-string"
+  value        = module.mysql.connection_string
   key_vault_id = module.keyvault.id
 
   depends_on = [module.keyvault]
@@ -305,7 +302,7 @@ module "monitoring_alerts" {
   enable_application_insights = false  # Already created
 
   aks_cluster_id       = module.aks.cluster_id
-  postgresql_server_id = module.postgresql.server_id
+  mysql_server_id      = module.mysql.server_id
 
   alert_email_receivers = var.alert_email_receivers
 

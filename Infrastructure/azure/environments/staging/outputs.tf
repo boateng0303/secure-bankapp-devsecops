@@ -27,9 +27,9 @@ output "keyvault_uri" {
   value       = module.keyvault.vault_uri
 }
 
-output "postgresql_fqdn" {
-  description = "PostgreSQL server FQDN"
-  value       = module.postgresql.server_fqdn
+output "mysql_fqdn" {
+  description = "MySQL server FQDN"
+  value       = module.mysql.server_fqdn
 }
 
 output "log_analytics_workspace_id" {

@@ -251,22 +251,22 @@ module "aks" {
 }
 
 # -----------------------------------------------------------------------------
-# PostgreSQL
+# MySQL
 # -----------------------------------------------------------------------------
 
-module "postgresql" {
-  source = "../../modules/postgresql"
+module "mysql" {
+  source = "../../modules/mysql"
 
-  server_name         = "${local.prefix}-psql"
+  server_name         = "${local.prefix}-mysql"
   location            = local.location
   resource_group_name = module.resource_group.name
 
-  postgresql_version = "15"
-  sku_name           = "GP_Standard_D4s_v3"  # High performance for prod
-  storage_mb         = 131072                 # 128 GB
+  mysql_version   = "8.0.21"
+  sku_name        = "GP_Standard_D4ds_v4"  # High performance for prod
+  storage_size_gb = 128
 
   subnet_id           = module.networking.database_subnet_id
-  private_dns_zone_id = module.networking.postgres_private_dns_zone_id
+  private_dns_zone_id = module.networking.mysql_private_dns_zone_id
 
   # Full HA for production
   high_availability_mode    = "ZoneRedundant"
@@ -278,9 +278,7 @@ module "postgresql" {
 
   databases = ["bankingdb"]
 
-  enable_aad_auth = true
-  tenant_id       = data.azurerm_client_config.current.tenant_id
-  enable_pgaudit  = true  # Audit logging for compliance
+  enable_audit_log = true  # Audit logging for compliance
 
   log_analytics_workspace_id = module.monitoring.log_analytics_workspace_id
 
@@ -291,9 +289,9 @@ module "postgresql" {
 # Store Secrets in Key Vault
 # -----------------------------------------------------------------------------
 
-resource "azurerm_key_vault_secret" "postgresql_admin_password" {
-  name         = "postgresql-admin-password"
-  value        = module.postgresql.administrator_password
+resource "azurerm_key_vault_secret" "mysql_admin_password" {
+  name         = "mysql-admin-password"
+  value        = module.mysql.administrator_password
   key_vault_id = module.keyvault.id
 
   content_type = "password"
@@ -306,9 +304,9 @@ resource "azurerm_key_vault_secret" "postgresql_admin_password" {
   }
 }
 
-resource "azurerm_key_vault_secret" "postgresql_connection_string" {
-  name         = "postgresql-connection-string"
-  value        = module.postgresql.connection_string
+resource "azurerm_key_vault_secret" "mysql_connection_string" {
+  name         = "mysql-connection-string"
+  value        = module.mysql.connection_string
   key_vault_id = module.keyvault.id
 
   content_type = "connection-string"
@@ -347,8 +345,8 @@ module "monitoring_alerts" {
   enable_container_insights   = false
   enable_application_insights = false
 
-  aks_cluster_id       = module.aks.cluster_id
-  postgresql_server_id = module.postgresql.server_id
+  aks_cluster_id    = module.aks.cluster_id
+  mysql_server_id   = module.mysql.server_id
 
   alert_email_receivers   = var.alert_email_receivers
   alert_sms_receivers     = var.alert_sms_receivers
