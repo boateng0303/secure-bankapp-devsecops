@@ -53,8 +53,8 @@ jobs:
             exit 0
           fi
           
-          # Extract unique environment names
-          ENVS=$(echo "$CHANGED_FILES" | cut -d'/' -f4 | sort -u | jq -R . | jq -s .)
+          # Extract unique environment names (compact JSON for GitHub Actions)
+          ENVS=$(echo "$CHANGED_FILES" | cut -d'/' -f4 | sort -u | jq -R . | jq -sc .)
           echo "Detected environments: $ENVS"
           echo "environments=$ENVS" >> $GITHUB_OUTPUT
           echo "has_changes=true" >> $GITHUB_OUTPUT

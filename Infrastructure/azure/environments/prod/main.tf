@@ -43,7 +43,6 @@ provider "azuread" {}
 # Data Sources
 # -----------------------------------------------------------------------------
 
-data "azurerm_client_config" "current" {}
 data "azurerm_subscription" "current" {}
 
 # -----------------------------------------------------------------------------
@@ -305,13 +304,17 @@ resource "azurerm_key_vault_secret" "mysql_admin_password" {
 }
 
 resource "azurerm_key_vault_secret" "mysql_connection_string" {
-  name         = "mysql-connection-string"
-  value        = module.mysql.connection_string
-  key_vault_id = module.keyvault.id
-
-  content_type = "connection-string"
+  name            = "mysql-connection-string"
+  value           = module.mysql.connection_string
+  key_vault_id    = module.keyvault.id
+  content_type    = "connection-string"
+  expiration_date = timeadd(timestamp(), "8760h") # 1 year from now
 
   depends_on = [module.keyvault]
+
+  lifecycle {
+    ignore_changes = [expiration_date]
+  }
 }
 
 # -----------------------------------------------------------------------------
@@ -345,8 +348,11 @@ module "monitoring_alerts" {
   enable_container_insights   = false
   enable_application_insights = false
 
-  aks_cluster_id    = module.aks.cluster_id
-  mysql_server_id   = module.mysql.server_id
+  # Enable alerts with explicit boolean flags
+  enable_aks_alerts   = true
+  enable_mysql_alerts = true
+  aks_cluster_id      = module.aks.cluster_id
+  mysql_server_id     = module.mysql.server_id
 
   alert_email_receivers   = var.alert_email_receivers
   alert_sms_receivers     = var.alert_sms_receivers

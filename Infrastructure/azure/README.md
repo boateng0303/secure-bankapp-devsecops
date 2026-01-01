@@ -412,6 +412,6 @@ az mysql flexible-server show-connection-string \
 - [AKS Best Practices](https://docs.microsoft.com/azure/aks/best-practices)
 - [GitHub Actions OIDC with Azure](https://docs.github.com/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-azure)
 
-## 📝 Licenses
+## 📝 License
 
 This project is licensed under the MIT License.

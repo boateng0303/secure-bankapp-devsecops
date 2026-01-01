@@ -150,7 +150,7 @@ resource "azurerm_monitor_action_group" "warning" {
 # -----------------------------------------------------------------------------
 
 resource "azurerm_monitor_metric_alert" "aks_cpu" {
-  count = var.aks_cluster_id != null ? 1 : 0
+  count = var.enable_aks_alerts ? 1 : 0
 
   name                = "${var.prefix}-aks-cpu-alert"
   resource_group_name = var.resource_group_name
@@ -177,7 +177,7 @@ resource "azurerm_monitor_metric_alert" "aks_cpu" {
 }
 
 resource "azurerm_monitor_metric_alert" "aks_memory" {
-  count = var.aks_cluster_id != null ? 1 : 0
+  count = var.enable_aks_alerts ? 1 : 0
 
   name                = "${var.prefix}-aks-memory-alert"
   resource_group_name = var.resource_group_name
@@ -204,7 +204,7 @@ resource "azurerm_monitor_metric_alert" "aks_memory" {
 }
 
 resource "azurerm_monitor_metric_alert" "aks_node_not_ready" {
-  count = var.aks_cluster_id != null ? 1 : 0
+  count = var.enable_aks_alerts ? 1 : 0
 
   name                = "${var.prefix}-aks-node-not-ready-alert"
   resource_group_name = var.resource_group_name
@@ -237,7 +237,7 @@ resource "azurerm_monitor_metric_alert" "aks_node_not_ready" {
 }
 
 resource "azurerm_monitor_metric_alert" "mysql_cpu" {
-  count = var.mysql_server_id != null ? 1 : 0
+  count = var.enable_mysql_alerts ? 1 : 0
 
   name                = "${var.prefix}-mysql-cpu-alert"
   resource_group_name = var.resource_group_name
@@ -264,7 +264,7 @@ resource "azurerm_monitor_metric_alert" "mysql_cpu" {
 }
 
 resource "azurerm_monitor_metric_alert" "mysql_storage" {
-  count = var.mysql_server_id != null ? 1 : 0
+  count = var.enable_mysql_alerts ? 1 : 0
 
   name                = "${var.prefix}-mysql-storage-alert"
   resource_group_name = var.resource_group_name
