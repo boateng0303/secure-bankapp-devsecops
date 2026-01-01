@@ -52,3 +52,19 @@ variable "alert_email_receivers" {
   }))
   default = []
 }
+
+variable "alert_webhook_receivers" {
+  description = "Webhook receivers for alerts (Slack, PagerDuty, etc.)"
+  type = list(object({
+    name        = string
+    service_uri = string
+  }))
+  default = []
+}
+
+variable "slack_webhook_url" {
+  description = "Slack webhook URL for alerts (set via TF_VAR_slack_webhook_url or GitHub Secret)"
+  type        = string
+  default     = ""
+  sensitive   = true  # Won't show in logs
+}

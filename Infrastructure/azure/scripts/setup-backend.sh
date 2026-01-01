@@ -49,6 +49,7 @@ az group create \
 echo -e "${GREEN}Resource group created: $RESOURCE_GROUP_NAME${NC}"
 
 # Create storage account with security best practices
+# NOTE: Created with Allow initially, locked down after container creation
 echo -e "${YELLOW}Creating storage account...${NC}"
 az storage account create \
     --name "$STORAGE_ACCOUNT_NAME" \
@@ -60,7 +61,7 @@ az storage account create \
     --min-tls-version TLS1_2 \
     --allow-blob-public-access false \
     --allow-shared-key-access true \
-    --default-action Deny \
+    --default-action Allow \
     --tags "Purpose=TerraformState" "ManagedBy=Script" \
     --output none
 
@@ -105,6 +106,16 @@ az storage account network-rule add \
     --output none 2>/dev/null || true
 
 echo -e "${GREEN}Added IP $CURRENT_IP to firewall${NC}"
+
+# Now lock down the storage account
+echo -e "${YELLOW}Locking down storage account network access...${NC}"
+az storage account update \
+    --name "$STORAGE_ACCOUNT_NAME" \
+    --resource-group "$RESOURCE_GROUP_NAME" \
+    --default-action Deny \
+    --output none
+
+echo -e "${GREEN}Storage account network access locked down${NC}"
 
 # Enable resource lock
 echo -e "${YELLOW}Creating delete lock...${NC}"

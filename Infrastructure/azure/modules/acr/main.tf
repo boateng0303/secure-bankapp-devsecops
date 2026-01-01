@@ -30,27 +30,12 @@ resource "azurerm_container_registry" "main" {
   anonymous_pull_enabled        = false
   data_endpoint_enabled         = var.sku == "Premium" ? var.data_endpoint_enabled : false
 
-  # Network rules (Premium only)
+  # Network rules (Premium only with private access)
+  # Note: network_rule_set is only applicable when public access is disabled
   dynamic "network_rule_set" {
     for_each = var.sku == "Premium" && !var.public_network_access_enabled ? [1] : []
     content {
       default_action = "Deny"
-
-      dynamic "ip_rule" {
-        for_each = var.allowed_ip_ranges
-        content {
-          action   = "Allow"
-          ip_range = ip_rule.value
-        }
-      }
-
-      dynamic "virtual_network" {
-        for_each = var.allowed_subnet_ids
-        content {
-          action    = "Allow"
-          subnet_id = virtual_network.value
-        }
-      }
     }
   }
 
@@ -184,7 +169,7 @@ resource "azurerm_container_registry_webhook" "main" {
 # -----------------------------------------------------------------------------
 
 resource "azurerm_monitor_diagnostic_setting" "acr" {
-  count = var.log_analytics_workspace_id != null ? 1 : 0
+  count = var.enable_diagnostics ? 1 : 0
 
   name                       = "${var.name}-diagnostics"
   target_resource_id         = azurerm_container_registry.main.id

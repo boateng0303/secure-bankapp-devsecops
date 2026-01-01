@@ -276,7 +276,7 @@ resource "azurerm_role_assignment" "aks_network_contributor" {
 }
 
 resource "azurerm_role_assignment" "aks_acr_pull" {
-  count = var.acr_id != null ? 1 : 0
+  count = var.enable_acr_pull ? 1 : 0
 
   scope                = var.acr_id
   role_definition_name = "AcrPull"
@@ -288,7 +288,7 @@ resource "azurerm_role_assignment" "aks_acr_pull" {
 # -----------------------------------------------------------------------------
 
 resource "azurerm_monitor_diagnostic_setting" "aks" {
-  count = var.log_analytics_workspace_id != null ? 1 : 0
+  count = var.enable_diagnostics ? 1 : 0
 
   name                       = "${var.cluster_name}-diagnostics"
   target_resource_id         = azurerm_kubernetes_cluster.main.id
