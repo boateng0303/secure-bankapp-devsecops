@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - 'Infrastructure/azure/**'
+      - '.github/workflows/terraform-*.yml'
+      - '.github/actions/terraform-azure/**'
   workflow_dispatch:
     inputs:
       environment:
