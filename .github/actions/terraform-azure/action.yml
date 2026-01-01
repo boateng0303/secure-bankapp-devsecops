@@ -574,19 +574,11 @@ runs:
       env:
         TF_VAR_slack_webhook_url: ${{ inputs.slack-webhook-url }}
       run: |
-        set +e
-
-        echo "::notice::Checking plan exit code before apply: ${{ steps.plan.outputs.exitcode }}"
+        # Terraform apply is idempotent - always safe to run
+        # If no changes, it completes instantly with "No changes"
+        # If changes exist, it applies them
         
-        # Only apply if there are changes
-        if [ "${{ steps.plan.outputs.exitcode }}" == "0" ]; then
-          echo "::notice::Plan exit code is 0 - no changes to apply"
-          echo "No changes to apply"
-          echo "exitcode=0" >> $GITHUB_OUTPUT
-          exit 0
-        fi
-        
-        echo "::notice::Plan exit code is ${{ steps.plan.outputs.exitcode }} - proceeding with apply"
+        echo "::notice::Running terraform apply (idempotent operation)"
         
         terraform apply \
           -input=false \
@@ -596,7 +588,7 @@ runs:
           -parallelism=${{ inputs.parallelism }} \
           tfplan.binary 2>&1 | tee apply_output.txt
         
-        APPLY_EXIT_CODE=${PIPESTATUS[0]}
+        APPLY_EXIT_CODE=$?
         echo "exitcode=$APPLY_EXIT_CODE" >> $GITHUB_OUTPUT
         
         if [ $APPLY_EXIT_CODE -ne 0 ]; then
