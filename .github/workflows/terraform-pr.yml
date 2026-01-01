@@ -134,5 +134,5 @@ jobs:
           backend-resource-group: ${{ vars.TF_BACKEND_RESOURCE_GROUP }}
           backend-storage-account: ${{ vars.TF_BACKEND_STORAGE_ACCOUNT }}
           enable-security-scan: 'true'
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.MY_TOKEN }}
           plan-title: '🏗️ Terraform Plan (Full)'

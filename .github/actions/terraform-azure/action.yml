@@ -356,11 +356,23 @@ runs:
         PLAN_EXIT_CODE=${PIPESTATUS[0]}
         echo "exitcode=$PLAN_EXIT_CODE" >> $GITHUB_OUTPUT
         
+        # Log the exit code for debugging
+        echo "::notice::Terraform plan exit code: $PLAN_EXIT_CODE"
+        echo "Exit codes: 0=no changes, 1=error, 2=changes present"
+        
         # Exit code: 0 = no changes, 1 = error, 2 = changes present
         if [ $PLAN_EXIT_CODE -eq 1 ]; then
           echo "::error::Terraform plan failed. See plan_output.txt for details."
           cat plan_output.txt
           exit 1
+        fi
+        
+        if [ $PLAN_EXIT_CODE -eq 2 ]; then
+          echo "::notice::Changes detected - terraform will apply these changes"
+        fi
+        
+        if [ $PLAN_EXIT_CODE -eq 0 ]; then
+          echo "::notice::No changes detected - infrastructure is up to date"
         fi
         
         # Convert binary plan to JSON for analysis (only if plan succeeded)
@@ -567,12 +579,17 @@ runs:
       run: |
         set +e
 
+        echo "::notice::Checking plan exit code before apply: ${{ steps.plan.outputs.exitcode }}"
+        
         # Only apply if there are changes
         if [ "${{ steps.plan.outputs.exitcode }}" == "0" ]; then
+          echo "::notice::Plan exit code is 0 - no changes to apply"
           echo "No changes to apply"
           echo "exitcode=0" >> $GITHUB_OUTPUT
           exit 0
         fi
+        
+        echo "::notice::Plan exit code is ${{ steps.plan.outputs.exitcode }} - proceeding with apply"
         
         terraform apply \
           -input=false \
