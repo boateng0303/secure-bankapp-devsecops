@@ -237,7 +237,7 @@ resource "azurerm_monitor_metric_alert" "aks_node_not_ready" {
 }
 
 resource "azurerm_monitor_metric_alert" "mysql_cpu" {
-  count = var.mysql_server_id != null ? 1 : 0
+  count = var.enable_mysql_alerts ? 1 : 0
 
   name                = "${var.prefix}-mysql-cpu-alert"
   resource_group_name = var.resource_group_name
