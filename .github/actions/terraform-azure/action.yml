@@ -238,19 +238,19 @@ runs:
     - name: Run tfsec
       id: tfsec
       if: inputs.enable-security-scan == 'true'
-      uses: aquasecurity/tfsec-action@v1.0.3
-      with:
-        working_directory: ${{ inputs.working-directory }}/${{ inputs.environment }}
-        soft_fail: true
-        format: sarif
-        out: tfsec-results.sarif
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}/${{ inputs.environment }}
+      run: |
+        # Install tfsec if not available
+        which tfsec || curl -s https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install_linux.sh | bash
+        tfsec . --format=sarif --out=tfsec-results.sarif --soft-fail || true
       continue-on-error: true
 
     - name: Upload tfsec SARIF
       if: inputs.enable-security-scan == 'true' && always()
       uses: github/codeql-action/upload-sarif@v3
       with:
-        sarif_file: tfsec-results.sarif
+        sarif_file: ${{ inputs.working-directory }}/${{ inputs.environment }}/tfsec-results.sarif
       continue-on-error: true
 
     - name: Run Checkov

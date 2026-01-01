@@ -274,17 +274,29 @@ module "mysql" {
 # -----------------------------------------------------------------------------
 
 resource "azurerm_key_vault_secret" "mysql_admin_password" {
-  name         = "mysql-admin-password"
-  value        = module.mysql.administrator_password
-  key_vault_id = module.keyvault.id
+  name            = "mysql-admin-password"
+  value           = module.mysql.administrator_password
+  key_vault_id    = module.keyvault.id
+  content_type    = "password"
+  expiration_date = timeadd(timestamp(), "8760h") # 1 year from now
 
   depends_on = [module.keyvault]
+
+  lifecycle {
+    ignore_changes = [expiration_date]
+  }
 }
 
 resource "azurerm_key_vault_secret" "mysql_connection_string" {
-  name         = "mysql-connection-string"
-  value        = module.mysql.connection_string
-  key_vault_id = module.keyvault.id
+  name            = "mysql-connection-string"
+  value           = module.mysql.connection_string
+  key_vault_id    = module.keyvault.id
+  content_type    = "connection-string"
+  expiration_date = timeadd(timestamp(), "8760h") # 1 year from now
 
   depends_on = [module.keyvault]
+
+  lifecycle {
+    ignore_changes = [expiration_date]
+  }
 }
