@@ -265,7 +265,7 @@ module "mysql" {
 
   # HA disabled for dev
   high_availability_mode = "Disabled"
-  availability_zone      = "1"
+  availability_zone      = "2"
 
   backup_retention_days        = 7
   geo_redundant_backup_enabled = false
