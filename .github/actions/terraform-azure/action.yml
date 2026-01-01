@@ -27,7 +27,7 @@ inputs:
   working-directory:
     description: 'Directory containing Terraform configuration'
     required: false
-    default: './infrastructure/azure/environments'
+    default: './Infrastructure/azure/environments'
   terraform-version:
     description: 'Terraform version to use'
     required: false

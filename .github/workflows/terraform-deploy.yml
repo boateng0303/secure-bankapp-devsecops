@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'infrastructure/azure/**'
+      - 'Infrastructure/azure/**'
   workflow_dispatch:
     inputs:
       environment:
