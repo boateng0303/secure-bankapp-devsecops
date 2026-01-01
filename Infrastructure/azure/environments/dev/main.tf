@@ -49,6 +49,13 @@ provider "azuread" {}
 
 data "azurerm_subscription" "current" {}
 
+# Generate random suffix for globally unique names
+resource "random_string" "suffix" {
+  length  = 6
+  special = false
+  upper   = false
+}
+
 # -----------------------------------------------------------------------------
 # Local Variables
 # -----------------------------------------------------------------------------
@@ -169,7 +176,7 @@ module "acr" {
 module "keyvault" {
   source = "../../modules/keyvault"
 
-  name                = "${var.project_name}-${local.environment}-kv"
+  name                = "${var.project_name}-${local.environment}-kv-${random_string.suffix.result}"
   location            = local.location
   resource_group_name = module.resource_group.name
 
@@ -267,6 +274,9 @@ module "mysql" {
   log_analytics_workspace_id = module.monitoring.log_analytics_workspace_id
 
   tags = local.common_tags
+
+  # Ensure DNS zone is linked to VNet before creating MySQL
+  depends_on = [module.networking]
 }
 
 # -----------------------------------------------------------------------------

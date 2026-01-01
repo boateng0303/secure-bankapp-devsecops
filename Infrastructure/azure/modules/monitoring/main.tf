@@ -311,8 +311,8 @@ resource "azurerm_monitor_scheduled_query_rules_alert_v2" "container_restarts" {
     query = <<-QUERY
       KubePodInventory
       | where TimeGenerated > ago(15m)
-      | where ContainerRestartCount > 5
-      | summarize RestartCount = sum(ContainerRestartCount) by PodName, Namespace
+      | where PodRestartCount > 5
+      | summarize RestartCount = sum(PodRestartCount) by Name, Namespace
       | where RestartCount > 10
     QUERY
 
