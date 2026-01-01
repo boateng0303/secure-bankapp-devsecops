@@ -45,6 +45,13 @@ provider "azuread" {}
 
 data "azurerm_subscription" "current" {}
 
+# Generate random suffix for globally unique names
+resource "random_string" "suffix" {
+  length  = 6
+  special = false
+  upper   = false
+}
+
 # -----------------------------------------------------------------------------
 # Local Variables
 # -----------------------------------------------------------------------------
@@ -168,7 +175,7 @@ module "acr" {
 module "keyvault" {
   source = "../../modules/keyvault"
 
-  name                = "${var.project_name}-${local.environment}-kv"
+  name                = "${var.project_name}-${local.environment}-kv-${random_string.suffix.result}"
   location            = local.location
   resource_group_name = module.resource_group.name
 
@@ -176,10 +183,11 @@ module "keyvault" {
   enable_rbac_authorization     = true
   purge_protection_enabled      = true
   soft_delete_retention_days    = 90
-  public_network_access_enabled = false
+  public_network_access_enabled = true  # Allow GitHub Actions access
+  network_acls_default_action   = "Allow"  # Required for Terraform access
   enabled_for_disk_encryption   = true
 
-  enable_private_endpoint    = true
+  enable_private_endpoint    = false  # Disable for now to avoid access issues
   private_endpoint_subnet_id = module.networking.private_endpoint_subnet_id
   private_dns_zone_id        = module.networking.keyvault_private_dns_zone_id
 
@@ -282,6 +290,9 @@ module "mysql" {
   log_analytics_workspace_id = module.monitoring.log_analytics_workspace_id
 
   tags = local.common_tags
+
+  # Ensure DNS zone is linked to VNet before creating MySQL
+  depends_on = [module.networking]
 }
 
 # -----------------------------------------------------------------------------

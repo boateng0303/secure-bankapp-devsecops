@@ -11,7 +11,7 @@ variable "project_name" {
 variable "location" {
   description = "Azure region"
   type        = string
-  default     = "East US 2"
+  default     = "West US 2"
 }
 
 variable "cost_center" {
@@ -29,7 +29,7 @@ variable "owner_email" {
 variable "kubernetes_version" {
   description = "Kubernetes version"
   type        = string
-  default     = "1.28"
+  default     = "1.30"
 }
 
 variable "aks_admin_group_ids" {
