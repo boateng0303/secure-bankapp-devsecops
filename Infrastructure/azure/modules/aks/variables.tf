@@ -250,6 +250,18 @@ variable "acr_id" {
   default     = null
 }
 
+variable "enable_diagnostics" {
+  description = "Enable diagnostic settings"
+  type        = bool
+  default     = true
+}
+
+variable "enable_acr_pull" {
+  description = "Enable ACR pull role assignment"
+  type        = bool
+  default     = true
+}
+
 variable "tags" {
   description = "Tags to apply to resources"
   type        = map(string)

@@ -43,6 +43,10 @@ fi
 SUBSCRIPTION_ID=$(az account show --query id -o tsv)
 TENANT_ID=$(az account show --query tenantId -o tsv)
 
+# Explicitly set the subscription context
+echo -e "${YELLOW}Setting subscription context...${NC}"
+az account set --subscription "$SUBSCRIPTION_ID"
+
 echo -e "${GREEN}Subscription: $SUBSCRIPTION_ID${NC}"
 echo -e "${GREEN}Tenant: $TENANT_ID${NC}"
 echo ""
@@ -72,7 +76,8 @@ sleep 30
 # Assign Contributor role at subscription level
 echo -e "${YELLOW}Assigning Contributor role...${NC}"
 az role assignment create \
-    --assignee "$APP_ID" \
+    --assignee-object-id "$SP_ID" \
+    --assignee-principal-type ServicePrincipal \
     --role "Contributor" \
     --scope "/subscriptions/$SUBSCRIPTION_ID" \
     --output none
@@ -82,7 +87,8 @@ echo -e "${GREEN}Contributor role assigned${NC}"
 # Assign User Access Administrator for RBAC assignments
 echo -e "${YELLOW}Assigning User Access Administrator role...${NC}"
 az role assignment create \
-    --assignee "$APP_ID" \
+    --assignee-object-id "$SP_ID" \
+    --assignee-principal-type ServicePrincipal \
     --role "User Access Administrator" \
     --scope "/subscriptions/$SUBSCRIPTION_ID" \
     --output none

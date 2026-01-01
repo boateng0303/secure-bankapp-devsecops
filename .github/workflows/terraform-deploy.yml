@@ -74,8 +74,9 @@ jobs:
           enable-security-scan: 'true'
           enable-cost-estimation: 'true'
           infracost-api-key: ${{ secrets.INFRACOST_API_KEY }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.MY_TOKEN }}
           plan-title: '🚀 Dev Deployment'
+          slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
 
       - name: Notify on Success
         if: success()
@@ -124,8 +125,9 @@ jobs:
           enable-security-scan: 'true'
           enable-cost-estimation: 'true'
           infracost-api-key: ${{ secrets.INFRACOST_API_KEY }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.MY_TOKEN }}
           plan-title: '🚀 Staging Deployment'
+          slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
 
       - name: Run Integration Tests
         if: success()
@@ -166,8 +168,9 @@ jobs:
           enable-security-scan: 'true'
           enable-cost-estimation: 'true'
           infracost-api-key: ${{ secrets.INFRACOST_API_KEY }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.MY_TOKEN }}
           plan-title: '🏭 Production Plan'
+          slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
 
       - name: Check for Changes
         id: check-changes
@@ -217,10 +220,11 @@ jobs:
           backend-resource-group: ${{ vars.TF_BACKEND_RESOURCE_GROUP }}
           backend-storage-account: ${{ vars.TF_BACKEND_STORAGE_ACCOUNT }}
           enable-security-scan: 'false'  # Already scanned in plan
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.MY_TOKEN }}
           plan-title: '🏭 Production Deployment'
           lock-timeout: '10m'
           parallelism: '5'  # Lower parallelism for safety
+          slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
 
       - name: Production Health Check
         if: success()

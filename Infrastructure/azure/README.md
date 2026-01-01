@@ -232,10 +232,9 @@ cp terraform.tfvars.example terraform.tfvars
 # Initialize Terraform
 terraform init \
   -backend-config="resource_group_name=tfstate-rg" \
-  -backend-config="storage_account_name=tfstateXXXX" \
+  -backend-config="storage_account_name=tfstate6bc89fe2" \
   -backend-config="container_name=tfstate" \
   -backend-config="key=dev/terraform.tfstate"
-
 # Plan
 terraform plan
 
@@ -407,7 +406,7 @@ az mysql flexible-server show-connection-string \
   --database-name <db>
 ```
 
-## 📚 Additional Resources
+## 📚 Additional Resourcess
 
 - [Terraform Azure Provider Docs](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs)
 - [AKS Best Practices](https://docs.microsoft.com/azure/aks/best-practices)

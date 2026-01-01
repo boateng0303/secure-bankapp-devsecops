@@ -35,6 +35,10 @@ provider "azurerm" {
       prevent_deletion_if_contains_resources = false
     }
   }
+  
+  # Skip automatic resource provider registration to avoid network timeouts
+  # The required providers will be registered on first resource creation
+  skip_provider_registration = true
 }
 
 provider "azuread" {}
@@ -125,6 +129,15 @@ module "monitoring" {
   app_insights_name           = "${local.prefix}-ai"
 
   alert_email_receivers = var.alert_email_receivers
+  
+  # Combine explicit webhook receivers with Slack URL from secret/env var
+  alert_webhook_receivers = concat(
+    var.alert_webhook_receivers,
+    var.slack_webhook_url != "" ? [{
+      name        = "slack-alerts"
+      service_uri = var.slack_webhook_url
+    }] : []
+  )
 
   tags = local.common_tags
 }

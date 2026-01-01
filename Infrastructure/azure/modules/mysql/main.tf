@@ -220,7 +220,7 @@ resource "azurerm_mysql_flexible_server_active_directory_administrator" "main" {
 # -----------------------------------------------------------------------------
 
 resource "azurerm_monitor_diagnostic_setting" "mysql" {
-  count = var.log_analytics_workspace_id != null ? 1 : 0
+  count = var.enable_diagnostics ? 1 : 0
 
   name                       = "${var.server_name}-diagnostics"
   target_resource_id         = azurerm_mysql_flexible_server.main.id

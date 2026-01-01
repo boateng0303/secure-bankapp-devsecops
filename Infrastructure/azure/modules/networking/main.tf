@@ -82,7 +82,7 @@ resource "azurerm_subnet" "private_endpoints" {
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = [var.private_endpoint_subnet_cidr]
 
-  private_endpoint_network_policies_enabled = false
+  private_endpoint_network_policies = "Disabled"
 }
 
 resource "azurerm_subnet" "bastion" {
@@ -261,8 +261,8 @@ resource "azurerm_bastion_host" "main" {
 # Private DNS Zones
 # -----------------------------------------------------------------------------
 
-resource "azurerm_private_dns_zone" "postgres" {
-  name                = "privatelink.postgres.database.azure.com"
+resource "azurerm_private_dns_zone" "mysql" {
+  name                = "privatelink.mysql.database.azure.com"
   resource_group_name = var.resource_group_name
 
   tags = var.tags

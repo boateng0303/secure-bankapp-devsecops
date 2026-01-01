@@ -96,6 +96,12 @@ inputs:
     description: 'Limit the number of concurrent operations'
     required: false
     default: '10'
+  
+  # Secrets (passed as TF_VAR_*)
+  slack-webhook-url:
+    description: 'Slack webhook URL for alerts (sensitive - passed as TF_VAR)'
+    required: false
+    default: ''
 
 outputs:
   plan-exitcode:
@@ -328,6 +334,8 @@ runs:
       id: plan
       shell: bash
       working-directory: ${{ inputs.working-directory }}/${{ inputs.environment }}
+      env:
+        TF_VAR_slack_webhook_url: ${{ inputs.slack-webhook-url }}
       run: |
         set +e
         
@@ -545,9 +553,11 @@ runs:
       if: inputs.operation == 'apply' && (inputs.auto-approve == 'true' || (github.ref == 'refs/heads/main' && github.event_name == 'push'))
       shell: bash
       working-directory: ${{ inputs.working-directory }}/${{ inputs.environment }}
+      env:
+        TF_VAR_slack_webhook_url: ${{ inputs.slack-webhook-url }}
       run: |
         set +e
-        
+
         # Only apply if there are changes
         if [ "${{ steps.plan.outputs.exitcode }}" == "0" ]; then
           echo "No changes to apply"
