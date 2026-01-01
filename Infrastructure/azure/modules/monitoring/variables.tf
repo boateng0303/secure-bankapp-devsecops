@@ -144,6 +144,18 @@ variable "mysql_server_id" {
   default     = null
 }
 
+variable "enable_aks_alerts" {
+  description = "Enable AKS metric alerts"
+  type        = bool
+  default     = false
+}
+
+variable "enable_mysql_alerts" {
+  description = "Enable MySQL metric alerts"
+  type        = bool
+  default     = false
+}
+
 # Dashboard
 variable "create_dashboard" {
   description = "Create Azure Portal dashboard"

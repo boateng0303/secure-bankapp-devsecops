@@ -348,8 +348,11 @@ module "monitoring_alerts" {
   enable_container_insights   = false
   enable_application_insights = false
 
-  aks_cluster_id    = module.aks.cluster_id
-  mysql_server_id   = module.mysql.server_id
+  # Enable alerts with explicit boolean flags
+  enable_aks_alerts   = true
+  enable_mysql_alerts = true
+  aks_cluster_id      = module.aks.cluster_id
+  mysql_server_id     = module.mysql.server_id
 
   alert_email_receivers   = var.alert_email_receivers
   alert_sms_receivers     = var.alert_sms_receivers
