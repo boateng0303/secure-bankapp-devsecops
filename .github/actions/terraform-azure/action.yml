@@ -343,22 +343,21 @@ runs:
       run: |
         set +e
         
-        # Run terraform plan and capture exit code directly (no pipe to avoid PIPESTATUS issues)
-        terraform plan \
-          -input=false \
-          -no-color \
-          -out=tfplan.binary \
-          -lock-timeout=${{ inputs.lock-timeout }} \
-          -parallelism=${{ inputs.parallelism }} \
-          -detailed-exitcode \
-          ${{ steps.tf-vars.outputs.var_args }} \
-          > plan_output.txt 2>&1
+        # Run terraform plan, capture exit code in a file to preserve it through pipes
+        {
+          terraform plan \
+            -input=false \
+            -no-color \
+            -out=tfplan.binary \
+            -lock-timeout=${{ inputs.lock-timeout }} \
+            -parallelism=${{ inputs.parallelism }} \
+            -detailed-exitcode \
+            ${{ steps.tf-vars.outputs.var_args }}
+          echo $? > /tmp/tf_exitcode
+        } 2>&1 | tee plan_output.txt
         
-        # Capture exit code IMMEDIATELY after command (before any other commands)
-        PLAN_EXIT_CODE=$?
-        
-        # Display the plan output
-        cat plan_output.txt
+        # Read the exit code from file
+        PLAN_EXIT_CODE=$(cat /tmp/tf_exitcode)
         
         echo "exitcode=$PLAN_EXIT_CODE" >> $GITHUB_OUTPUT
         
@@ -367,16 +366,16 @@ runs:
         echo "Exit codes: 0=no changes, 1=error, 2=changes present"
         
         # Exit code: 0 = no changes, 1 = error, 2 = changes present
-        if [ $PLAN_EXIT_CODE -eq 1 ]; then
+        if [ "$PLAN_EXIT_CODE" -eq 1 ]; then
           echo "::error::Terraform plan failed. See plan_output.txt for details."
           exit 1
         fi
         
-        if [ $PLAN_EXIT_CODE -eq 2 ]; then
+        if [ "$PLAN_EXIT_CODE" -eq 2 ]; then
           echo "::notice::Changes detected - terraform will apply these changes"
         fi
         
-        if [ $PLAN_EXIT_CODE -eq 0 ]; then
+        if [ "$PLAN_EXIT_CODE" -eq 0 ]; then
           echo "::notice::No changes detected - infrastructure is up to date"
         fi
         
