@@ -184,8 +184,9 @@ module "keyvault" {
   enable_rbac_authorization     = true
   purge_protection_enabled      = false  # Disabled for dev
   soft_delete_retention_days    = 7
-  public_network_access_enabled = true  # Easier for dev
+  public_network_access_enabled = true   # Easier for dev
   enable_private_endpoint       = false
+  network_acls_default_action   = "Allow" # Allow GitHub Actions access
 
   admin_object_ids = var.keyvault_admin_object_ids
 
