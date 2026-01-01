@@ -81,7 +81,7 @@ variable "acr_georeplications" {
   }))
   default = [
     {
-      location                  = "West US 2"
+      location                  = "East US 2"  # Must be different from primary location (West US 2)
       regional_endpoint_enabled = true
       zone_redundancy_enabled   = true
     }
