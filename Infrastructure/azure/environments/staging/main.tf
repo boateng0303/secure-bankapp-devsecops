@@ -257,10 +257,8 @@ module "mysql" {
   subnet_id           = module.networking.database_subnet_id
   private_dns_zone_id = module.networking.mysql_private_dns_zone_id
 
-  # HA enabled for staging
+  # HA enabled for staging - no zone specified to let Azure pick available zone
   high_availability_mode    = "SameZone"
-  availability_zone         = "1"
-  standby_availability_zone = "1"
 
   backup_retention_days        = 14
   geo_redundant_backup_enabled = false
