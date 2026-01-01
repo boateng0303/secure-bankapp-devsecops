@@ -275,10 +275,8 @@ module "mysql" {
   subnet_id           = module.networking.database_subnet_id
   private_dns_zone_id = module.networking.mysql_private_dns_zone_id
 
-  # Full HA for production
+  # Full HA for production - no zones specified to let Azure pick available zones
   high_availability_mode    = "ZoneRedundant"
-  availability_zone         = "1"
-  standby_availability_zone = "2"
 
   backup_retention_days        = 35  # Maximum
   geo_redundant_backup_enabled = true
