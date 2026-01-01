@@ -6,7 +6,7 @@ on:
       - main
       - develop
     paths:
-      - 'infrastructure/azure/**'
+      - 'Infrastructure/azure/**'
       - '.github/workflows/terraform-*.yml'
       - '.github/actions/terraform-azure/**'
 
@@ -43,8 +43,8 @@ jobs:
       - name: Detect Changed Environments
         id: changes
         run: |
-          # Get changed files in infrastructure/azure/environments
-          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep '^infrastructure/azure/environments/' || true)
+          # Get changed files in Infrastructure/azure/environments
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep '^Infrastructure/azure/environments/' || true)
           
           if [ -z "$CHANGED_FILES" ]; then
             echo "No infrastructure changes detected"
