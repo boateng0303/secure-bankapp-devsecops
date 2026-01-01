@@ -341,41 +341,38 @@ runs:
       env:
         TF_VAR_slack_webhook_url: ${{ inputs.slack-webhook-url }}
       run: |
-        set +e
-        
+        # Run terraform plan and capture output
         terraform plan \
           -input=false \
           -no-color \
           -out=tfplan.binary \
           -lock-timeout=${{ inputs.lock-timeout }} \
           -parallelism=${{ inputs.parallelism }} \
-          -detailed-exitcode \
           ${{ steps.tf-vars.outputs.var_args }} \
           2>&1 | tee plan_output.txt
         
-        PLAN_EXIT_CODE=${PIPESTATUS[0]}
-        echo "exitcode=$PLAN_EXIT_CODE" >> $GITHUB_OUTPUT
-        
-        # Log the exit code for debugging
-        echo "::notice::Terraform plan exit code: $PLAN_EXIT_CODE"
-        echo "Exit codes: 0=no changes, 1=error, 2=changes present"
-        
-        # Exit code: 0 = no changes, 1 = error, 2 = changes present
-        if [ $PLAN_EXIT_CODE -eq 1 ]; then
-          echo "::error::Terraform plan failed. See plan_output.txt for details."
-          cat plan_output.txt
+        # Check if plan failed (terraform will exit non-zero on actual errors)
+        if [ ! -f tfplan.binary ]; then
+          echo "::error::Terraform plan failed - no plan file created"
           exit 1
         fi
         
-        if [ $PLAN_EXIT_CODE -eq 2 ]; then
-          echo "::notice::Changes detected - terraform will apply these changes"
-        fi
-        
-        if [ $PLAN_EXIT_CODE -eq 0 ]; then
+        # Detect changes by parsing the plan output (more reliable than exit codes)
+        if grep -q "No changes. Your infrastructure matches the configuration." plan_output.txt; then
+          echo "exitcode=0" >> $GITHUB_OUTPUT
           echo "::notice::No changes detected - infrastructure is up to date"
+        elif grep -q "Plan:" plan_output.txt; then
+          # Extract the plan summary
+          PLAN_SUMMARY=$(grep "Plan:" plan_output.txt)
+          echo "::notice::Changes detected: $PLAN_SUMMARY"
+          echo "exitcode=2" >> $GITHUB_OUTPUT
+        else
+          # Assume changes if we can't determine (safer to apply)
+          echo "exitcode=2" >> $GITHUB_OUTPUT
+          echo "::notice::Assuming changes present"
         fi
         
-        # Convert binary plan to JSON for analysis (only if plan succeeded)
+        # Convert binary plan to JSON for analysis
         if [ -f tfplan.binary ]; then
           terraform show -json tfplan.binary > tfplan.json 2>/dev/null || echo '{}' > tfplan.json
         else
