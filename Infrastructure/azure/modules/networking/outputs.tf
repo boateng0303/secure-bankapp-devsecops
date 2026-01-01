@@ -37,6 +37,11 @@ output "mysql_private_dns_zone_id" {
   value       = azurerm_private_dns_zone.mysql.id
 }
 
+output "mysql_dns_zone_link_id" {
+  description = "The ID of the MySQL DNS zone VNet link (use as dependency)"
+  value       = azurerm_private_dns_zone_virtual_network_link.mysql.id
+}
+
 output "keyvault_private_dns_zone_id" {
   description = "The ID of the Key Vault private DNS zone"
   value       = azurerm_private_dns_zone.keyvault.id
