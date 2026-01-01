@@ -406,7 +406,7 @@ az mysql flexible-server show-connection-string \
   --database-name <db>
 ```
 
-## 📚 Additional Resourcess
+## 📚 Additional Resources
 
 - [Terraform Azure Provider Docs](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs)
 - [AKS Best Practices](https://docs.microsoft.com/azure/aks/best-practices)
