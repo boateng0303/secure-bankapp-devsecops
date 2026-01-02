@@ -222,19 +222,19 @@ module "aks" {
   sku_tier                  = "Premium"  # Premium for SLA and features
   automatic_channel_upgrade = "stable"
 
-  # Node pools - production sized
-  system_node_pool_vm_size   = "Standard_D4s_v5"
+  # Node pools - production sized (using DC-series available in subscription)
+  system_node_pool_vm_size   = "Standard_DC4ds_v3"
   system_node_pool_count     = 3
   system_node_pool_min_count = 3
   system_node_pool_max_count = 5
 
-  user_node_pool_vm_size   = "Standard_D8s_v5"
+  user_node_pool_vm_size   = "Standard_DC8ds_v3"
   user_node_pool_count     = 3
   user_node_pool_min_count = 3
   user_node_pool_max_count = 20
 
   enable_spot_node_pool    = false  # No spot for production
-  spot_node_pool_vm_size   = "Standard_D4s_v5"
+  spot_node_pool_vm_size   = "Standard_DC4ds_v3"
   spot_node_pool_max_count = 10
 
   availability_zones = ["1", "2", "3"]  # Full zone redundancy

@@ -217,13 +217,13 @@ module "aks" {
   # SKU tier
   sku_tier = "Free"  # Use Free tier for dev
 
-  # Node pools - smaller for dev
-  system_node_pool_vm_size   = "Standard_D2s_v5"
+  # Node pools - smaller for dev (using DC-series available in subscription)
+  system_node_pool_vm_size   = "Standard_DC2ds_v3"
   system_node_pool_count     = 1
   system_node_pool_min_count = 1
   system_node_pool_max_count = 3
 
-  user_node_pool_vm_size   = "Standard_D2s_v5"
+  user_node_pool_vm_size   = "Standard_DC2ds_v3"
   user_node_pool_count     = 1
   user_node_pool_min_count = 1
   user_node_pool_max_count = 5
