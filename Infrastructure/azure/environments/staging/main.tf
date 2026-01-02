@@ -211,13 +211,13 @@ module "aks" {
   # SKU tier
   sku_tier = "Standard"
 
-  # Node pools - medium sized for staging
-  system_node_pool_vm_size   = "Standard_D4s_v5"
+  # Node pools - medium sized for staging (using DC-series available in subscription)
+  system_node_pool_vm_size   = "Standard_DC4ds_v3"
   system_node_pool_count     = 2
   system_node_pool_min_count = 2
   system_node_pool_max_count = 4
 
-  user_node_pool_vm_size   = "Standard_D4s_v5"
+  user_node_pool_vm_size   = "Standard_DC4ds_v3"
   user_node_pool_count     = 2
   user_node_pool_min_count = 2
   user_node_pool_max_count = 8
