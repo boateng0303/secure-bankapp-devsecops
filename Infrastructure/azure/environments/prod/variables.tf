@@ -11,7 +11,7 @@ variable "project_name" {
 variable "location" {
   description = "Azure region"
   type        = string
-  default     = "West US 2"
+  default     = "East US"
 }
 
 variable "cost_center" {
