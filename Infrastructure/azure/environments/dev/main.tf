@@ -257,14 +257,15 @@ module "mysql" {
   resource_group_name = module.resource_group.name
 
   mysql_version   = "8.0.21"
-  sku_name        = "GP_Standard_D2ds_v4"  # General Purpose - better zone availability
+  sku_name        = "B_Standard_B1ms"  # Burstable for dev - cost effective
   storage_size_gb = 32
 
   subnet_id           = module.networking.database_subnet_id
   private_dns_zone_id = module.networking.mysql_private_dns_zone_id
 
-  # HA disabled for dev - no zone specified to let Azure pick available zone
+  # HA disabled for dev - explicit zone 3 for availability
   high_availability_mode = "Disabled"
+  availability_zone      = "3"
 
   backup_retention_days        = 7
   geo_redundant_backup_enabled = false

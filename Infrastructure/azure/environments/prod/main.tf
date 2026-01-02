@@ -269,14 +269,16 @@ module "mysql" {
   resource_group_name = module.resource_group.name
 
   mysql_version   = "8.0.21"
-  sku_name        = "GP_Standard_D4ds_v4"  # High performance for prod
+  sku_name        = "GP_Standard_D2ds_v4"  # General Purpose for prod
   storage_size_gb = 128
 
   subnet_id           = module.networking.database_subnet_id
   private_dns_zone_id = module.networking.mysql_private_dns_zone_id
 
-  # Full HA for production - no zones specified to let Azure pick available zones
+  # HA for production with explicit zones
   high_availability_mode    = "ZoneRedundant"
+  availability_zone         = "3"
+  standby_availability_zone = "1"
 
   backup_retention_days        = 35  # Maximum
   geo_redundant_backup_enabled = true

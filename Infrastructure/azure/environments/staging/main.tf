@@ -251,14 +251,15 @@ module "mysql" {
   resource_group_name = module.resource_group.name
 
   mysql_version   = "8.0.21"
-  sku_name        = "GP_Standard_D2ds_v4"  # General Purpose for staging
+  sku_name        = "B_Standard_B2s"  # Burstable for staging - cost effective
   storage_size_gb = 64
 
   subnet_id           = module.networking.database_subnet_id
   private_dns_zone_id = module.networking.mysql_private_dns_zone_id
 
-  # HA enabled for staging - no zone specified to let Azure pick available zone
-  high_availability_mode    = "SameZone"
+  # HA disabled for staging (Burstable doesn't support HA) - explicit zone 3
+  high_availability_mode = "Disabled"
+  availability_zone      = "3"
 
   backup_retention_days        = 14
   geo_redundant_backup_enabled = false
