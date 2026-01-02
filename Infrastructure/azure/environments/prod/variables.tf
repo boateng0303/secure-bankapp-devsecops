@@ -11,7 +11,7 @@ variable "project_name" {
 variable "location" {
   description = "Azure region"
   type        = string
-  default     = "Central US"
+  default     = "UK South"
 }
 
 variable "cost_center" {
@@ -81,7 +81,7 @@ variable "acr_georeplications" {
   }))
   default = [
     {
-      location                  = "East US 2"  # Must be different from primary location (West US 2)
+      location                  = "West Europe"  # Must be different from primary location (UK South)
       regional_endpoint_enabled = true
       zone_redundancy_enabled   = true
     }
