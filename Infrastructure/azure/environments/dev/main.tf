@@ -28,16 +28,14 @@ terraform {
 provider "azurerm" {
   features {
     key_vault {
-      purge_soft_delete_on_destroy    = false
-      recover_soft_deleted_key_vaults = true
+      purge_soft_delete_on_destroy     = false
+      recover_soft_deleted_key_vaults  = true
     }
     resource_group {
       prevent_deletion_if_contains_resources = false
     }
   }
-  
-  # Skip automatic resource provider registration to avoid network timeouts
-  # The required providers will be registered on first resource creation
+
   skip_provider_registration = true
 }
 
@@ -49,7 +47,10 @@ provider "azuread" {}
 
 data "azurerm_subscription" "current" {}
 
-# Generate random suffix for globally unique names
+# -----------------------------------------------------------------------------
+# Random Suffix for Global Names
+# -----------------------------------------------------------------------------
+
 resource "random_string" "suffix" {
   length  = 6
   special = false
@@ -57,7 +58,7 @@ resource "random_string" "suffix" {
 }
 
 # -----------------------------------------------------------------------------
-# Local Variables
+# Locals
 # -----------------------------------------------------------------------------
 
 locals {
@@ -66,12 +67,12 @@ locals {
   location    = var.location
 
   common_tags = {
-    Environment  = local.environment
-    Project      = var.project_name
-    ManagedBy    = "Terraform"
-    CostCenter   = var.cost_center
-    Owner        = var.owner_email
-    CreatedDate  = timestamp()
+    Environment = local.environment
+    Project     = var.project_name
+    ManagedBy   = "Terraform"
+    CostCenter  = var.cost_center
+    Owner       = var.owner_email
+    CreatedDate = timestamp()
   }
 }
 
@@ -84,7 +85,7 @@ module "resource_group" {
 
   name               = "${local.prefix}-rg"
   location           = local.location
-  enable_delete_lock = false  # Dev environment - no lock
+  enable_delete_lock = false
   tags               = local.common_tags
 }
 
@@ -109,7 +110,7 @@ module "networking" {
 
   enable_application_gateway = true
   enable_nat_gateway         = true
-  enable_bastion             = false  # Disabled for dev
+  enable_bastion             = false
 
   tags = local.common_tags
 }
@@ -127,16 +128,15 @@ module "monitoring" {
   subscription_id     = data.azurerm_subscription.current.subscription_id
 
   log_analytics_name = "${local.prefix}-law"
-  retention_in_days  = 30  # Shorter retention for dev
+  retention_in_days  = 30
 
   enable_container_insights   = true
-  enable_security_insights    = false  # Disabled for dev
+  enable_security_insights    = false
   enable_application_insights = true
   app_insights_name           = "${local.prefix}-ai"
 
   alert_email_receivers = var.alert_email_receivers
-  
-  # Combine explicit webhook receivers with Slack URL from secret/env var
+
   alert_webhook_receivers = concat(
     var.alert_webhook_receivers,
     var.slack_webhook_url != "" ? [{
@@ -159,9 +159,9 @@ module "acr" {
   location            = local.location
   resource_group_name = module.resource_group.name
 
-  sku                           = "Standard"  # Lower tier for dev
+  sku                           = "Standard"
   admin_enabled                 = false
-  public_network_access_enabled = true  # Easier for dev
+  public_network_access_enabled = true
   enable_private_endpoint       = false
 
   log_analytics_workspace_id = module.monitoring.log_analytics_workspace_id
@@ -182,11 +182,11 @@ module "keyvault" {
 
   sku_name                      = "standard"
   enable_rbac_authorization     = true
-  purge_protection_enabled      = false  # Disabled for dev
+  purge_protection_enabled      = false
   soft_delete_retention_days    = 7
-  public_network_access_enabled = true   # Easier for dev
+  public_network_access_enabled = true
   enable_private_endpoint       = false
-  network_acls_default_action   = "Allow" # Allow GitHub Actions access
+  network_acls_default_action   = "Allow"
 
   admin_object_ids = var.keyvault_admin_object_ids
 
@@ -202,22 +202,18 @@ module "keyvault" {
 module "aks" {
   source = "../../modules/aks"
 
-  cluster_name        = "${local.prefix}-aks"
-  location            = local.location
+  cluster_name       = "${local.prefix}-aks"
+  location           = local.location
   resource_group_name = module.resource_group.name
-  dns_prefix          = "${var.project_name}-${local.environment}"
-  kubernetes_version  = var.kubernetes_version
-  environment         = local.environment
+  dns_prefix         = "${var.project_name}-${local.environment}"
+  kubernetes_version = var.kubernetes_version
+  environment        = local.environment
 
   subnet_id = module.networking.aks_subnet_id
 
-  # Private cluster - disabled for dev for easier access
   private_cluster_enabled = false
+  sku_tier                = "Free"
 
-  # SKU tier
-  sku_tier = "Free"  # Use Free tier for dev
-
-  # Node pools - smaller for dev (using DC-series available in subscription)
   system_node_pool_vm_size   = "Standard_DC2ds_v3"
   system_node_pool_count     = 1
   system_node_pool_min_count = 1
@@ -229,15 +225,13 @@ module "aks" {
   user_node_pool_max_count = 5
 
   enable_spot_node_pool = false
-  availability_zones    = []  # No zone redundancy for dev
+  availability_zones    = []
 
-  # RBAC
   enable_azure_rbac      = true
   admin_group_object_ids = var.aks_admin_group_ids
 
-  # Add-ons
   enable_workload_identity = true
-  enable_azure_policy      = false  # Disabled for dev
+  enable_azure_policy      = false
 
   log_analytics_workspace_id = module.monitoring.log_analytics_workspace_id
   acr_id                     = module.acr.id
@@ -246,7 +240,7 @@ module "aks" {
 }
 
 # -----------------------------------------------------------------------------
-# MySQL
+# MySQL Flexible Server
 # -----------------------------------------------------------------------------
 
 module "mysql" {
@@ -257,18 +251,16 @@ module "mysql" {
   resource_group_name = module.resource_group.name
 
   mysql_version   = "8.0.21"
-  sku_name        = "B_Standard_B1ms"  # Burstable for dev - cost effective
+  sku_name        = "B_Standard_B1ms"
   storage_size_gb = 32
 
   subnet_id           = module.networking.database_subnet_id
   private_dns_zone_id = module.networking.mysql_private_dns_zone_id
 
-  # HA disabled for dev - explicit zone 3 for availability
-  high_availability_mode = "Disabled"
-  availability_zone      = "3"
-
-  backup_retention_days        = 7
-  geo_redundant_backup_enabled = false
+  high_availability_mode        = "Disabled"
+  availability_zone             = "3"
+  backup_retention_days         = 7
+  geo_redundant_backup_enabled  = false
 
   databases = ["bankingdb"]
 
@@ -276,7 +268,6 @@ module "mysql" {
 
   tags = local.common_tags
 
-  # Ensure DNS zone is linked to VNet before creating MySQL
   depends_on = [module.networking]
 }
 
@@ -285,11 +276,11 @@ module "mysql" {
 # -----------------------------------------------------------------------------
 
 resource "azurerm_key_vault_secret" "mysql_admin_password" {
-  name            = "mysql-admin-password"
-  value           = module.mysql.administrator_password
-  key_vault_id    = module.keyvault.id
-  content_type    = "password"
-  expiration_date = timeadd(timestamp(), "8760h") # 1 year from now
+  name         = "mysql-admin-password"
+  value        = module.mysql.administrator_password
+  key_vault_id = module.keyvault.id
+  content_type = "password"
+  expiration_date = timeadd(timestamp(), "8760h")
 
   depends_on = [module.keyvault]
 
@@ -299,11 +290,11 @@ resource "azurerm_key_vault_secret" "mysql_admin_password" {
 }
 
 resource "azurerm_key_vault_secret" "mysql_connection_string" {
-  name            = "mysql-connection-string"
-  value           = module.mysql.connection_string
-  key_vault_id    = module.keyvault.id
-  content_type    = "connection-string"
-  expiration_date = timeadd(timestamp(), "8760h") # 1 year from now
+  name         = "mysql-connection-string"
+  value        = module.mysql.connection_string
+  key_vault_id = module.keyvault.id
+  content_type = "connection-string"
+  expiration_date = timeadd(timestamp(), "8760h")
 
   depends_on = [module.keyvault]
 

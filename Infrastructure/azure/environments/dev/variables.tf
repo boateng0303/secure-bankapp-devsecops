@@ -11,7 +11,7 @@ variable "project_name" {
 variable "location" {
   description = "Azure region"
   type        = string
-  default     = "West Europe"
+  default     = "westeurope"
 }
 
 variable "cost_center" {
@@ -66,5 +66,5 @@ variable "slack_webhook_url" {
   description = "Slack webhook URL for alerts (set via TF_VAR_slack_webhook_url or GitHub Secret)"
   type        = string
   default     = ""
-  sensitive   = true  # Won't show in logs
+  sensitive   = true
 }

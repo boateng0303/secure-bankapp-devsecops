@@ -62,11 +62,11 @@ locals {
   location    = var.location
 
   common_tags = {
-    Environment  = local.environment
-    Project      = var.project_name
-    ManagedBy    = "Terraform"
-    CostCenter   = var.cost_center
-    Owner        = var.owner_email
+    Environment = local.environment
+    Project     = var.project_name
+    ManagedBy   = "Terraform"
+    CostCenter  = var.cost_center
+    Owner       = var.owner_email
   }
 }
 
@@ -79,7 +79,7 @@ module "resource_group" {
 
   name               = "${local.prefix}-rg"
   location           = local.location
-  enable_delete_lock = true  # Protected in staging
+  enable_delete_lock = true
   tags               = local.common_tags
 }
 
@@ -95,7 +95,7 @@ module "networking" {
   resource_group_name = module.resource_group.name
   vnet_name           = "${local.prefix}-vnet"
 
-  address_space                = ["10.1.0.0/16"]  # Different CIDR from dev
+  address_space                = ["10.1.0.0/16"]
   aks_subnet_cidr              = "10.1.0.0/22"
   database_subnet_cidr         = "10.1.4.0/24"
   appgw_subnet_cidr            = "10.1.5.0/24"
@@ -122,7 +122,7 @@ module "monitoring" {
   subscription_id     = data.azurerm_subscription.current.subscription_id
 
   log_analytics_name = "${local.prefix}-law"
-  retention_in_days  = 60  # Longer retention for staging
+  retention_in_days  = 60
 
   enable_container_insights   = true
   enable_security_insights    = false
@@ -130,6 +130,8 @@ module "monitoring" {
   app_insights_name           = "${local.prefix}-ai"
 
   alert_email_receivers = var.alert_email_receivers
+  alert_sms_receivers   = var.alert_sms_receivers
+  alert_webhook_receivers = var.alert_webhook_receivers
 
   tags = local.common_tags
 }
@@ -148,7 +150,7 @@ module "acr" {
   sku                           = "Premium"
   admin_enabled                 = false
   public_network_access_enabled = false
-  zone_redundancy_enabled       = false  # Staging doesn't need zone redundancy
+  zone_redundancy_enabled       = false
 
   enable_private_endpoint    = true
   private_endpoint_subnet_id = module.networking.private_endpoint_subnet_id
@@ -174,10 +176,10 @@ module "keyvault" {
   enable_rbac_authorization     = true
   purge_protection_enabled      = true
   soft_delete_retention_days    = 30
-  public_network_access_enabled = true  # Allow GitHub Actions access
-  network_acls_default_action   = "Allow"  # Required for Terraform access
+  public_network_access_enabled = true
+  network_acls_default_action   = "Allow"
 
-  enable_private_endpoint    = false  # Disable for now to avoid access issues
+  enable_private_endpoint    = false
   private_endpoint_subnet_id = module.networking.private_endpoint_subnet_id
   private_dns_zone_id        = module.networking.keyvault_private_dns_zone_id
 
@@ -204,14 +206,11 @@ module "aks" {
 
   subnet_id = module.networking.aks_subnet_id
 
-  # Private cluster
   private_cluster_enabled             = true
   private_cluster_public_fqdn_enabled = true
 
-  # SKU tier
   sku_tier = "Standard"
 
-  # Node pools - medium sized for staging (using DC-series available in subscription)
   system_node_pool_vm_size   = "Standard_DC4ds_v3"
   system_node_pool_count     = 2
   system_node_pool_min_count = 2
@@ -222,14 +221,12 @@ module "aks" {
   user_node_pool_min_count = 2
   user_node_pool_max_count = 8
 
-  enable_spot_node_pool = true  # Enable spot for cost savings
-  availability_zones    = ["1", "2"]  # Some zone redundancy
+  enable_spot_node_pool = true
+  availability_zones    = ["1", "2"]
 
-  # RBAC
   enable_azure_rbac      = true
   admin_group_object_ids = var.aks_admin_group_ids
 
-  # Add-ons
   enable_workload_identity = true
   enable_azure_policy      = true
 
@@ -251,13 +248,12 @@ module "mysql" {
   resource_group_name = module.resource_group.name
 
   mysql_version   = "8.0.21"
-  sku_name        = "B_Standard_B2s"  # Burstable for staging - cost effective
+  sku_name        = "B_Standard_B2s"
   storage_size_gb = 64
 
   subnet_id           = module.networking.database_subnet_id
   private_dns_zone_id = module.networking.mysql_private_dns_zone_id
 
-  # HA disabled for staging (Burstable doesn't support HA) - explicit zone 3
   high_availability_mode = "Disabled"
   availability_zone      = "3"
 
@@ -270,7 +266,6 @@ module "mysql" {
 
   tags = local.common_tags
 
-  # Ensure DNS zone is linked to VNet before creating MySQL
   depends_on = [module.networking]
 }
 
@@ -283,7 +278,7 @@ resource "azurerm_key_vault_secret" "mysql_admin_password" {
   value           = module.mysql.administrator_password
   key_vault_id    = module.keyvault.id
   content_type    = "password"
-  expiration_date = timeadd(timestamp(), "8760h") # 1 year from now
+  expiration_date = timeadd(timestamp(), "8760h")
 
   depends_on = [module.keyvault]
 
@@ -297,7 +292,7 @@ resource "azurerm_key_vault_secret" "mysql_connection_string" {
   value           = module.mysql.connection_string
   key_vault_id    = module.keyvault.id
   content_type    = "connection-string"
-  expiration_date = timeadd(timestamp(), "8760h") # 1 year from now
+  expiration_date = timeadd(timestamp(), "8760h")
 
   depends_on = [module.keyvault]
 
@@ -307,7 +302,7 @@ resource "azurerm_key_vault_secret" "mysql_connection_string" {
 }
 
 # -----------------------------------------------------------------------------
-# Update Monitoring with Resource IDs
+# Monitoring Alerts
 # -----------------------------------------------------------------------------
 
 module "monitoring_alerts" {
@@ -319,16 +314,17 @@ module "monitoring_alerts" {
   subscription_id     = data.azurerm_subscription.current.subscription_id
 
   log_analytics_name          = "${local.prefix}-law"
-  enable_container_insights   = false  # Already created
-  enable_application_insights = false  # Already created
+  enable_container_insights   = false
+  enable_application_insights = false
 
-  # Enable alerts with explicit boolean flags
   enable_aks_alerts   = true
   enable_mysql_alerts = true
   aks_cluster_id      = module.aks.cluster_id
   mysql_server_id     = module.mysql.server_id
 
-  alert_email_receivers = var.alert_email_receivers
+  alert_email_receivers   = var.alert_email_receivers
+  alert_sms_receivers     = var.alert_sms_receivers
+  alert_webhook_receivers = var.alert_webhook_receivers
 
   tags = local.common_tags
 
