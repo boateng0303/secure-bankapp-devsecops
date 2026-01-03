@@ -28,7 +28,7 @@ terraform {
 provider "azurerm" {
   features {
     key_vault {
-      purge_soft_delete_on_destroy    = false
+      purge_soft_delete_on_destroy     = false
       recover_soft_deleted_key_vaults = true
     }
     resource_group {
@@ -45,7 +45,7 @@ provider "azuread" {}
 
 data "azurerm_subscription" "current" {}
 
-# Generate random suffix for globally unique names
+# Random suffix for globally unique names
 resource "random_string" "suffix" {
   length  = 6
   special = false
@@ -59,7 +59,7 @@ resource "random_string" "suffix" {
 locals {
   environment = "prod"
   prefix      = "${var.project_name}-${local.environment}"
-  location    = var.location
+  location    = lower(var.location)  # Ensure lowercase
 
   common_tags = {
     Environment  = local.environment
@@ -67,7 +67,7 @@ locals {
     ManagedBy    = "Terraform"
     CostCenter   = var.cost_center
     Owner        = var.owner_email
-    Compliance   = "PCI-DSS"  # Banking compliance
+    Compliance   = "PCI-DSS"
     DataClass    = "Confidential"
   }
 }
@@ -81,7 +81,7 @@ module "resource_group" {
 
   name               = "${local.prefix}-rg"
   location           = local.location
-  enable_delete_lock = true  # Always protected in production
+  enable_delete_lock = true
   tags               = local.common_tags
 }
 
@@ -97,7 +97,7 @@ module "networking" {
   resource_group_name = module.resource_group.name
   vnet_name           = "${local.prefix}-vnet"
 
-  address_space                = ["10.2.0.0/16"]  # Production CIDR
+  address_space                = ["10.2.0.0/16"]
   aks_subnet_cidr              = "10.2.0.0/22"
   database_subnet_cidr         = "10.2.4.0/24"
   appgw_subnet_cidr            = "10.2.5.0/24"
@@ -106,7 +106,7 @@ module "networking" {
 
   enable_application_gateway = true
   enable_nat_gateway         = true
-  enable_bastion             = true  # Bastion for secure access
+  enable_bastion             = true
 
   tags = local.common_tags
 }
@@ -124,10 +124,10 @@ module "monitoring" {
   subscription_id     = data.azurerm_subscription.current.subscription_id
 
   log_analytics_name = "${local.prefix}-law"
-  retention_in_days  = 365  # Full year for compliance
+  retention_in_days  = 365
 
   enable_container_insights   = true
-  enable_security_insights    = true  # Enable Sentinel for prod
+  enable_security_insights    = true
   enable_application_insights = true
   app_insights_name           = "${local.prefix}-ai"
 
@@ -160,7 +160,6 @@ module "acr" {
   private_endpoint_subnet_id = module.networking.private_endpoint_subnet_id
   private_dns_zone_id        = module.networking.acr_private_dns_zone_id
 
-  # Geo-replication for DR
   georeplications = var.acr_georeplications
 
   log_analytics_workspace_id = module.monitoring.log_analytics_workspace_id
@@ -179,15 +178,15 @@ module "keyvault" {
   location            = local.location
   resource_group_name = module.resource_group.name
 
-  sku_name                      = "premium"  # Premium for HSM keys
+  sku_name                      = "premium"
   enable_rbac_authorization     = true
   purge_protection_enabled      = true
   soft_delete_retention_days    = 90
-  public_network_access_enabled = true  # Allow GitHub Actions access
-  network_acls_default_action   = "Allow"  # Required for Terraform access
+  public_network_access_enabled = true
+  network_acls_default_action   = "Allow"
   enabled_for_disk_encryption   = true
 
-  enable_private_endpoint    = false  # Disable for now to avoid access issues
+  enable_private_endpoint    = false
   private_endpoint_subnet_id = module.networking.private_endpoint_subnet_id
   private_dns_zone_id        = module.networking.keyvault_private_dns_zone_id
 
@@ -214,15 +213,12 @@ module "aks" {
 
   subnet_id = module.networking.aks_subnet_id
 
-  # Private cluster - fully private
   private_cluster_enabled             = true
   private_cluster_public_fqdn_enabled = false
 
-  # SKU tier
-  sku_tier                  = "Premium"  # Premium for SLA and features
+  sku_tier                  = "Premium"
   automatic_channel_upgrade = "stable"
 
-  # Node pools - production sized (using DC-series available in subscription)
   system_node_pool_vm_size   = "Standard_DC4ds_v3"
   system_node_pool_count     = 3
   system_node_pool_min_count = 3
@@ -233,23 +229,20 @@ module "aks" {
   user_node_pool_min_count = 3
   user_node_pool_max_count = 20
 
-  enable_spot_node_pool    = false  # No spot for production
+  enable_spot_node_pool    = false
   spot_node_pool_vm_size   = "Standard_DC4ds_v3"
   spot_node_pool_max_count = 10
 
-  availability_zones = ["1", "2", "3"]  # Full zone redundancy
+  availability_zones = ["1", "2", "3"]
   max_pods_per_node  = 50
 
-  # RBAC
   enable_azure_rbac      = true
   admin_group_object_ids = var.aks_admin_group_ids
 
-  # Add-ons
   enable_workload_identity = true
   enable_azure_policy      = true
 
-  # Network
-  outbound_type = "userDefinedRouting"  # Use NAT Gateway
+  outbound_type = "userDefinedRouting"
 
   log_analytics_workspace_id = module.monitoring.log_analytics_workspace_id
   acr_id                     = module.acr.id
@@ -269,29 +262,27 @@ module "mysql" {
   resource_group_name = module.resource_group.name
 
   mysql_version   = "8.0.21"
-  sku_name        = "GP_Standard_D2ds_v4"  # General Purpose for prod
+  sku_name        = "GP_Standard_D2ds_v4"
   storage_size_gb = 128
 
   subnet_id           = module.networking.database_subnet_id
   private_dns_zone_id = module.networking.mysql_private_dns_zone_id
 
-  # HA for production with explicit zones
   high_availability_mode    = "ZoneRedundant"
   availability_zone         = "3"
   standby_availability_zone = "1"
 
-  backup_retention_days        = 35  # Maximum
+  backup_retention_days        = 35
   geo_redundant_backup_enabled = true
 
   databases = ["bankingdb"]
 
-  enable_audit_log = true  # Audit logging for compliance
+  enable_audit_log = true
 
   log_analytics_workspace_id = module.monitoring.log_analytics_workspace_id
 
   tags = local.common_tags
 
-  # Ensure DNS zone is linked to VNet before creating MySQL
   depends_on = [module.networking]
 }
 
@@ -303,9 +294,8 @@ resource "azurerm_key_vault_secret" "mysql_admin_password" {
   name         = "mysql-admin-password"
   value        = module.mysql.administrator_password
   key_vault_id = module.keyvault.id
-
   content_type = "password"
-  expiration_date = timeadd(timestamp(), "8760h")  # 1 year
+  expiration_date = timeadd(timestamp(), "8760h")
 
   depends_on = [module.keyvault]
 
@@ -319,7 +309,7 @@ resource "azurerm_key_vault_secret" "mysql_connection_string" {
   value           = module.mysql.connection_string
   key_vault_id    = module.keyvault.id
   content_type    = "connection-string"
-  expiration_date = timeadd(timestamp(), "8760h") # 1 year from now
+  expiration_date = timeadd(timestamp(), "8760h")
 
   depends_on = [module.keyvault]
 
@@ -329,7 +319,7 @@ resource "azurerm_key_vault_secret" "mysql_connection_string" {
 }
 
 # -----------------------------------------------------------------------------
-# Azure Backup (for additional protection)
+# Azure Backup
 # -----------------------------------------------------------------------------
 
 resource "azurerm_recovery_services_vault" "main" {
@@ -339,12 +329,11 @@ resource "azurerm_recovery_services_vault" "main" {
   sku                 = "Standard"
 
   soft_delete_enabled = true
-  
-  tags = local.common_tags
+  tags                = local.common_tags
 }
 
 # -----------------------------------------------------------------------------
-# Update Monitoring with Resource IDs for Alerts
+# Monitoring Alerts for Resources
 # -----------------------------------------------------------------------------
 
 module "monitoring_alerts" {
@@ -359,7 +348,6 @@ module "monitoring_alerts" {
   enable_container_insights   = false
   enable_application_insights = false
 
-  # Enable alerts with explicit boolean flags
   enable_aks_alerts   = true
   enable_mysql_alerts = true
   aks_cluster_id      = module.aks.cluster_id

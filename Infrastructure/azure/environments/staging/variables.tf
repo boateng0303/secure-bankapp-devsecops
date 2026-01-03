@@ -52,3 +52,38 @@ variable "alert_email_receivers" {
   }))
   default = []
 }
+
+variable "alert_sms_receivers" {
+  description = "SMS receivers for critical alerts"
+  type = list(object({
+    name         = string
+    country_code = string
+    phone_number = string
+  }))
+  default = []
+}
+
+variable "alert_webhook_receivers" {
+  description = "Webhook receivers for alerts (Slack, PagerDuty, etc.)"
+  type = list(object({
+    name        = string
+    service_uri = string
+  }))
+  default = []
+}
+
+variable "acr_georeplications" {
+  description = "ACR geo-replication settings for staging"
+  type = list(object({
+    location                  = string
+    regional_endpoint_enabled = optional(bool, true)
+    zone_redundancy_enabled   = optional(bool, false)
+  }))
+  default = [
+    {
+      location                  = "North Europe"
+      regional_endpoint_enabled = true
+      zone_redundancy_enabled   = false
+    }
+  ]
+}

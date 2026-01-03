@@ -2,20 +2,9 @@
 # AZURE CONTAINER REGISTRY MODULE
 # =============================================================================
 
-terraform {
-  required_version = ">= 1.5.0"
-
-  required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~> 3.85"
-    }
-  }
-}
-
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # Container Registry
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 
 resource "azurerm_container_registry" "main" {
   name                = var.name
@@ -23,15 +12,14 @@ resource "azurerm_container_registry" "main" {
   location            = var.location
   sku                 = var.sku
 
-  # Security
   admin_enabled                 = var.admin_enabled
   public_network_access_enabled = var.public_network_access_enabled
-  zone_redundancy_enabled       = var.sku == "Premium" ? var.zone_redundancy_enabled : false
-  anonymous_pull_enabled        = false
-  data_endpoint_enabled         = var.sku == "Premium" ? var.data_endpoint_enabled : false
 
-  # Network rules (Premium only with private access)
-  # Note: network_rule_set is only applicable when public access is disabled
+  zone_redundancy_enabled = var.sku == "Premium" ? var.zone_redundancy_enabled : false
+  anonymous_pull_enabled = false
+  data_endpoint_enabled  = var.sku == "Premium" ? var.data_endpoint_enabled : false
+
+  # Network rules (Premium only)
   dynamic "network_rule_set" {
     for_each = var.sku == "Premium" && !var.public_network_access_enabled ? [1] : []
     content {
@@ -56,7 +44,6 @@ resource "azurerm_container_registry" "main" {
     }
   }
 
-  # Quarantine policy
   quarantine_policy_enabled = var.sku == "Premium" ? var.quarantine_policy_enabled : false
 
   # Encryption (Premium only)
@@ -69,7 +56,7 @@ resource "azurerm_container_registry" "main" {
     }
   }
 
-  # Georeplications (Premium only)
+  # Geo-replications (Premium only)
   dynamic "georeplications" {
     for_each = var.sku == "Premium" ? var.georeplications : []
     content {
@@ -83,9 +70,9 @@ resource "azurerm_container_registry" "main" {
   tags = var.tags
 }
 
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # Private Endpoint
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 
 resource "azurerm_private_endpoint" "acr" {
   count = var.enable_private_endpoint ? 1 : 0
@@ -107,12 +94,16 @@ resource "azurerm_private_endpoint" "acr" {
     private_dns_zone_ids = [var.private_dns_zone_id]
   }
 
+  depends_on = [
+    azurerm_container_registry.main
+  ]
+
   tags = var.tags
 }
 
-# -----------------------------------------------------------------------------
-# Scope Maps and Tokens
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Scope Maps
+# ---------------------------------------------------------------------------
 
 resource "azurerm_container_registry_scope_map" "pull" {
   count = var.create_pull_scope_map ? 1 : 0
@@ -120,11 +111,13 @@ resource "azurerm_container_registry_scope_map" "pull" {
   name                    = "pull-scope"
   container_registry_name = azurerm_container_registry.main.name
   resource_group_name     = var.resource_group_name
-  
+
   actions = [
     "repositories/*/content/read",
     "repositories/*/metadata/read"
   ]
+
+  depends_on = [azurerm_container_registry.main]
 }
 
 resource "azurerm_container_registry_scope_map" "push" {
@@ -133,18 +126,20 @@ resource "azurerm_container_registry_scope_map" "push" {
   name                    = "push-scope"
   container_registry_name = azurerm_container_registry.main.name
   resource_group_name     = var.resource_group_name
-  
+
   actions = [
     "repositories/*/content/read",
     "repositories/*/content/write",
     "repositories/*/metadata/read",
     "repositories/*/metadata/write"
   ]
+
+  depends_on = [azurerm_container_registry.main]
 }
 
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # Webhooks
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 
 resource "azurerm_container_registry_webhook" "main" {
   for_each = var.webhooks
@@ -161,12 +156,14 @@ resource "azurerm_container_registry_webhook" "main" {
 
   custom_headers = each.value.custom_headers
 
+  depends_on = [azurerm_container_registry.main]
+
   tags = var.tags
 }
 
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # Diagnostic Settings
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 
 resource "azurerm_monitor_diagnostic_setting" "acr" {
   count = var.enable_diagnostics ? 1 : 0
@@ -187,4 +184,8 @@ resource "azurerm_monitor_diagnostic_setting" "acr" {
     category = "AllMetrics"
     enabled  = true
   }
+
+  depends_on = [
+    azurerm_container_registry.main
+  ]
 }

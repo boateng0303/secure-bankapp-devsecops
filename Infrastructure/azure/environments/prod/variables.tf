@@ -9,37 +9,37 @@ variable "project_name" {
 }
 
 variable "location" {
-  description = "Azure region"
+  description = "Azure region for primary resources"
   type        = string
   default     = "West Europe"
 }
 
 variable "cost_center" {
-  description = "Cost center for billing"
+  description = "Cost center for billing and tagging"
   type        = string
   default     = "production"
 }
 
 variable "owner_email" {
-  description = "Owner email for tagging"
+  description = "Owner email for tagging and notifications"
   type        = string
   default     = "devops@company.com"
 }
 
 variable "kubernetes_version" {
-  description = "Kubernetes version"
+  description = "Kubernetes version for AKS cluster"
   type        = string
   default     = "1.32"
 }
 
 variable "aks_admin_group_ids" {
-  description = "Azure AD group IDs for AKS cluster admins"
+  description = "Azure AD group object IDs for AKS cluster administrators"
   type        = list(string)
   default     = []
 }
 
 variable "keyvault_admin_object_ids" {
-  description = "Object IDs for Key Vault administrators"
+  description = "Azure AD object IDs for Key Vault administrators"
   type        = list(string)
   default     = []
 }
@@ -73,7 +73,7 @@ variable "alert_webhook_receivers" {
 }
 
 variable "acr_georeplications" {
-  description = "ACR geo-replication settings"
+  description = "Azure Container Registry geo-replication settings"
   type = list(object({
     location                  = string
     regional_endpoint_enabled = optional(bool, true)
@@ -81,7 +81,7 @@ variable "acr_georeplications" {
   }))
   default = [
     {
-      location                  = "North Europe"  # Must be different from primary location (West Europe)
+      location                  = "North Europe"  # Must differ from primary ACR location
       regional_endpoint_enabled = true
       zone_redundancy_enabled   = true
     }

@@ -18,7 +18,7 @@ terraform {
 }
 
 # -----------------------------------------------------------------------------
-# Random Password
+# RANDOM PASSWORD
 # -----------------------------------------------------------------------------
 
 resource "random_password" "admin" {
@@ -28,22 +28,21 @@ resource "random_password" "admin" {
 }
 
 # -----------------------------------------------------------------------------
-# MySQL Flexible Server
+# MYSQL FLEXIBLE SERVER
 # -----------------------------------------------------------------------------
 
 resource "azurerm_mysql_flexible_server" "main" {
-  name                   = var.server_name
-  resource_group_name    = var.resource_group_name
-  location               = var.location
-  version                = var.mysql_version
-  delegated_subnet_id    = var.subnet_id
-  private_dns_zone_id    = var.private_dns_zone_id
+  name                = var.server_name
+  resource_group_name = var.resource_group_name
+  location            = var.location
+  version             = var.mysql_version
+  delegated_subnet_id = var.subnet_id
+  private_dns_zone_id = var.private_dns_zone_id
 
   administrator_login    = var.administrator_login
   administrator_password = var.administrator_password != null ? var.administrator_password : random_password.admin.result
 
-  sku_name = var.sku_name
-
+  sku_name                     = var.sku_name
   backup_retention_days        = var.backup_retention_days
   geo_redundant_backup_enabled = var.geo_redundant_backup_enabled
 
@@ -83,13 +82,13 @@ resource "azurerm_mysql_flexible_server" "main" {
   lifecycle {
     ignore_changes = [
       zone,
-      high_availability[0].standby_availability_zone,
+      high_availability[0].standby_availability_zone
     ]
   }
 }
 
 # -----------------------------------------------------------------------------
-# Databases
+# DATABASES
 # -----------------------------------------------------------------------------
 
 resource "azurerm_mysql_flexible_database" "main" {
@@ -103,7 +102,7 @@ resource "azurerm_mysql_flexible_database" "main" {
 }
 
 # -----------------------------------------------------------------------------
-# Server Configuration
+# SERVER CONFIGURATIONS
 # -----------------------------------------------------------------------------
 
 resource "azurerm_mysql_flexible_server_configuration" "require_ssl" {
@@ -178,7 +177,7 @@ resource "azurerm_mysql_flexible_server_configuration" "max_connections" {
 }
 
 # -----------------------------------------------------------------------------
-# Firewall Rules (for public access if needed)
+# FIREWALL RULES
 # -----------------------------------------------------------------------------
 
 resource "azurerm_mysql_flexible_server_firewall_rule" "azure_services" {
@@ -202,7 +201,7 @@ resource "azurerm_mysql_flexible_server_firewall_rule" "allowed_ips" {
 }
 
 # -----------------------------------------------------------------------------
-# Active Directory Administrator
+# ACTIVE DIRECTORY ADMIN
 # -----------------------------------------------------------------------------
 
 resource "azurerm_mysql_flexible_server_active_directory_administrator" "main" {
@@ -216,7 +215,7 @@ resource "azurerm_mysql_flexible_server_active_directory_administrator" "main" {
 }
 
 # -----------------------------------------------------------------------------
-# Diagnostic Settings
+# DIAGNOSTIC SETTINGS
 # -----------------------------------------------------------------------------
 
 resource "azurerm_monitor_diagnostic_setting" "mysql" {
@@ -226,13 +225,8 @@ resource "azurerm_monitor_diagnostic_setting" "mysql" {
   target_resource_id         = azurerm_mysql_flexible_server.main.id
   log_analytics_workspace_id = var.log_analytics_workspace_id
 
-  enabled_log {
-    category = "MySqlSlowLogs"
-  }
-
-  enabled_log {
-    category = "MySqlAuditLogs"
-  }
+  enabled_log { category = "MySqlSlowLogs" }
+  enabled_log { category = "MySqlAuditLogs" }
 
   metric {
     category = "AllMetrics"

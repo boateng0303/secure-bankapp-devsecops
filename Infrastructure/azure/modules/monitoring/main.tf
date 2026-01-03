@@ -14,9 +14,9 @@ terraform {
   }
 }
 
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # Log Analytics Workspace
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 
 resource "azurerm_log_analytics_workspace" "main" {
   name                = var.log_analytics_name
@@ -33,9 +33,9 @@ resource "azurerm_log_analytics_workspace" "main" {
   tags = var.tags
 }
 
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # Log Analytics Solutions
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 
 resource "azurerm_log_analytics_solution" "container_insights" {
   count = var.enable_container_insights ? 1 : 0
@@ -67,9 +67,9 @@ resource "azurerm_log_analytics_solution" "security_insights" {
   }
 }
 
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # Application Insights
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 
 resource "azurerm_application_insights" "main" {
   count = var.enable_application_insights ? 1 : 0
@@ -80,18 +80,18 @@ resource "azurerm_application_insights" "main" {
   workspace_id        = azurerm_log_analytics_workspace.main.id
   application_type    = var.app_insights_type
 
-  retention_in_days                   = var.app_insights_retention_days
-  daily_data_cap_in_gb                = var.app_insights_daily_cap_gb
-  daily_data_cap_notifications_disabled = false
-  disable_ip_masking                  = false
-  sampling_percentage                 = var.app_insights_sampling_percentage
+  retention_in_days                       = var.app_insights_retention_days
+  daily_data_cap_in_gb                    = var.app_insights_daily_cap_gb
+  daily_data_cap_notifications_disabled   = false
+  disable_ip_masking                      = false
+  sampling_percentage                     = var.app_insights_sampling_percentage
 
   tags = var.tags
 }
 
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # Action Groups
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 
 resource "azurerm_monitor_action_group" "critical" {
   name                = "${var.prefix}-critical-ag"
@@ -145,9 +145,9 @@ resource "azurerm_monitor_action_group" "warning" {
   tags = var.tags
 }
 
-# -----------------------------------------------------------------------------
-# Metric Alerts
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Metric Alerts for AKS
+# ---------------------------------------------------------------------------
 
 resource "azurerm_monitor_metric_alert" "aks_cpu" {
   count = var.enable_aks_alerts ? 1 : 0
@@ -236,6 +236,10 @@ resource "azurerm_monitor_metric_alert" "aks_node_not_ready" {
   tags = var.tags
 }
 
+# ---------------------------------------------------------------------------
+# Metric Alerts for MySQL
+# ---------------------------------------------------------------------------
+
 resource "azurerm_monitor_metric_alert" "mysql_cpu" {
   count = var.enable_mysql_alerts ? 1 : 0
 
@@ -290,22 +294,21 @@ resource "azurerm_monitor_metric_alert" "mysql_storage" {
   tags = var.tags
 }
 
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # Log Query Alerts
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 
 resource "azurerm_monitor_scheduled_query_rules_alert_v2" "container_restarts" {
   count = var.enable_container_insights ? 1 : 0
 
-  name                = "${var.prefix}-container-restarts-alert"
-  resource_group_name = var.resource_group_name
-  location            = var.location
-  description         = "Alert when containers are restarting frequently"
-  severity            = 2
-
-  scopes              = [azurerm_log_analytics_workspace.main.id]
+  name                 = "${var.prefix}-container-restarts-alert"
+  resource_group_name  = var.resource_group_name
+  location             = var.location
+  description          = "Alert when containers are restarting frequently"
+  severity             = 2
+  scopes               = [azurerm_log_analytics_workspace.main.id]
   evaluation_frequency = "PT5M"
-  window_duration     = "PT15M"
+  window_duration      = "PT15M"
 
   criteria {
     query = <<-QUERY
@@ -336,15 +339,14 @@ resource "azurerm_monitor_scheduled_query_rules_alert_v2" "container_restarts" {
 resource "azurerm_monitor_scheduled_query_rules_alert_v2" "error_logs" {
   count = var.enable_application_insights ? 1 : 0
 
-  name                = "${var.prefix}-error-logs-alert"
-  resource_group_name = var.resource_group_name
-  location            = var.location
-  description         = "Alert when there are many application errors"
-  severity            = 2
-
-  scopes              = [azurerm_log_analytics_workspace.main.id]
+  name                 = "${var.prefix}-error-logs-alert"
+  resource_group_name  = var.resource_group_name
+  location             = var.location
+  description          = "Alert when there are many application errors"
+  severity             = 2
+  scopes               = [azurerm_log_analytics_workspace.main.id]
   evaluation_frequency = "PT5M"
-  window_duration     = "PT15M"
+  window_duration      = "PT15M"
 
   criteria {
     query = <<-QUERY
@@ -371,9 +373,9 @@ resource "azurerm_monitor_scheduled_query_rules_alert_v2" "error_logs" {
   tags = var.tags
 }
 
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # Dashboard
-# -----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 
 resource "azurerm_portal_dashboard" "main" {
   count = var.create_dashboard ? 1 : 0
