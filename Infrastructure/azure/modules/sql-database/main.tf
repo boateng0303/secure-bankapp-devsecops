@@ -193,7 +193,7 @@ resource "azurerm_monitor_diagnostic_setting" "sql_server" {
 }
 
 resource "azurerm_monitor_diagnostic_setting" "sql_database" {
-  for_each = var.enable_diagnostics && var.log_analytics_workspace_id != null ? toset(var.databases) : []
+  for_each = var.enable_diagnostics ? toset(var.databases) : toset([])
 
   name                       = "${each.value}-diagnostics"
   target_resource_id         = azurerm_mssql_database.main[each.value].id
