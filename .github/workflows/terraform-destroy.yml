@@ -180,14 +180,36 @@ jobs:
           auto-approve: 'true'
           backend-resource-group: ${{ vars.TF_BACKEND_RESOURCE_GROUP }}
           backend-storage-account: ${{ vars.TF_BACKEND_STORAGE_ACCOUNT }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.MY_TOKEN }}
           plan-title: '🗑️ Production Destruction'
           lock-timeout: '15m'
           parallelism: '3'
 
       - name: Send Notification
         if: always()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
-          echo "📨 Sending destruction notification..."
-          # Add notification to Slack/Teams/PagerDuty
-          # Include details about what was destroyed and by whom
+          STATUS="${{ job.status }}"
+          if [ "$STATUS" = "success" ]; then
+            COLOR="good"
+            EMOJI="✅"
+          else
+            COLOR="danger"
+            EMOJI="❌"
+          fi
+          
+          curl -X POST -H 'Content-type: application/json' \
+            --data "{
+              \"attachments\": [{
+                \"color\": \"$COLOR\",
+                \"title\": \"$EMOJI Production Infrastructure Destroyed\",
+                \"fields\": [
+                  {\"title\": \"Environment\", \"value\": \"prod\", \"short\": true},
+                  {\"title\": \"Status\", \"value\": \"$STATUS\", \"short\": true},
+                  {\"title\": \"Destroyed by\", \"value\": \"${{ github.actor }}\", \"short\": true},
+                  {\"title\": \"Reason\", \"value\": \"${{ github.event.inputs.reason }}\", \"short\": false}
+                ]
+              }]
+            }" \
+            $SLACK_WEBHOOK_URL
