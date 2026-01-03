@@ -176,7 +176,7 @@ resource "azurerm_private_endpoint" "sql" {
 # -----------------------------------------------------------------------------
 
 resource "azurerm_monitor_diagnostic_setting" "sql_server" {
-  count = var.enable_diagnostics && var.log_analytics_workspace_id != null ? 1 : 0
+  count = var.enable_diagnostics ? 1 : 0
 
   name                       = "${var.server_name}-diagnostics"
   target_resource_id         = azurerm_mssql_server.main.id
@@ -238,7 +238,7 @@ resource "azurerm_mssql_server_extended_auditing_policy" "main" {
   storage_account_access_key              = var.audit_storage_access_key
   storage_account_access_key_is_secondary = false
   retention_in_days                       = var.audit_retention_days
-  log_monitoring_enabled                  = var.log_analytics_workspace_id != null
+  log_monitoring_enabled                  = var.enable_diagnostics
 }
 
 # -----------------------------------------------------------------------------
