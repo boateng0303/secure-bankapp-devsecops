@@ -251,80 +251,9 @@ module "aks" {
 }
 
 # -----------------------------------------------------------------------------
-# Azure SQL Database
+# NOTE: SQL Database will be created via Azure Portal (ClickOps)
+# Due to subscription provisioning restrictions in Terraform
 # -----------------------------------------------------------------------------
-
-module "sql_database" {
-  source = "../../modules/sql-database"
-
-  server_name         = "${local.prefix}-sql"
-  location            = local.location
-  resource_group_name = module.resource_group.name
-
-  # Database configuration
-  databases      = ["bankingdb"]
-  sku_name       = "S1"           # Standard tier for production
-  max_size_gb    = 50
-  zone_redundant = false          # Set to true for Premium SKUs
-
-  # Networking - Private endpoint for production
-  allow_azure_services       = true
-  allowed_subnet_ids         = [module.networking.aks_subnet_id]
-  enable_private_endpoint    = true
-  private_endpoint_subnet_id = module.networking.private_endpoint_subnet_id
-  private_dns_zone_id        = module.networking.sql_private_dns_zone_id
-
-  # Backup
-  backup_retention_days      = 35
-  enable_long_term_retention = true
-  ltr_weekly_retention       = "P4W"
-  ltr_monthly_retention      = "P12M"
-  ltr_yearly_retention       = "P5Y"
-
-  # Security
-  enable_threat_detection          = true
-  threat_detection_email_addresses = var.alert_email_receivers != null ? [for r in var.alert_email_receivers : r.email] : []
-
-  # Monitoring
-  enable_diagnostics         = true
-  log_analytics_workspace_id = module.monitoring.log_analytics_workspace_id
-
-  tags = local.common_tags
-
-  depends_on = [module.networking]
-}
-
-# -----------------------------------------------------------------------------
-# Store SQL Credentials in Key Vault
-# -----------------------------------------------------------------------------
-
-resource "azurerm_key_vault_secret" "sql_admin_password" {
-  name            = "sql-admin-password"
-  value           = module.sql_database.administrator_password
-  key_vault_id    = module.keyvault.id
-  content_type    = "password"
-  expiration_date = timeadd(timestamp(), "8760h")
-
-  depends_on = [module.keyvault]
-
-  lifecycle {
-    ignore_changes = [expiration_date]
-  }
-}
-
-resource "azurerm_key_vault_secret" "sql_connection_string" {
-  name            = "sql-connection-string"
-  value           = module.sql_database.connection_string
-  key_vault_id    = module.keyvault.id
-  content_type    = "connection-string"
-  expiration_date = timeadd(timestamp(), "8760h")
-
-  depends_on = [module.keyvault]
-
-  lifecycle {
-    ignore_changes = [expiration_date]
-  }
-}
 
 # -----------------------------------------------------------------------------
 # Azure Backup

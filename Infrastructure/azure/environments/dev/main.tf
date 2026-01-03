@@ -240,65 +240,6 @@ module "aks" {
 }
 
 # -----------------------------------------------------------------------------
-# Azure SQL Database
+# NOTE: SQL Database will be created via Azure Portal (ClickOps)
+# Due to subscription provisioning restrictions in Terraform
 # -----------------------------------------------------------------------------
-
-module "sql_database" {
-  source = "../../modules/sql-database"
-
-  server_name         = "${local.prefix}-sql"
-  location            = local.location
-  resource_group_name = module.resource_group.name
-
-  # Database configuration
-  databases   = ["bankingdb"]
-  sku_name    = "Basic"    # Free tier friendly
-  max_size_gb = 2
-
-  # Networking - allow Azure services and AKS subnet
-  allow_azure_services = true
-  allowed_subnet_ids   = [module.networking.aks_subnet_id]
-
-  # Backup
-  backup_retention_days = 7
-
-  # Monitoring
-  enable_diagnostics         = true
-  log_analytics_workspace_id = module.monitoring.log_analytics_workspace_id
-
-  tags = local.common_tags
-
-  depends_on = [module.networking]
-}
-
-# -----------------------------------------------------------------------------
-# Store SQL Credentials in Key Vault
-# -----------------------------------------------------------------------------
-
-resource "azurerm_key_vault_secret" "sql_admin_password" {
-  name            = "sql-admin-password"
-  value           = module.sql_database.administrator_password
-  key_vault_id    = module.keyvault.id
-  content_type    = "password"
-  expiration_date = timeadd(timestamp(), "8760h")
-
-  depends_on = [module.keyvault]
-
-  lifecycle {
-    ignore_changes = [expiration_date]
-  }
-}
-
-resource "azurerm_key_vault_secret" "sql_connection_string" {
-  name            = "sql-connection-string"
-  value           = module.sql_database.connection_string
-  key_vault_id    = module.keyvault.id
-  content_type    = "connection-string"
-  expiration_date = timeadd(timestamp(), "8760h")
-
-  depends_on = [module.keyvault]
-
-  lifecycle {
-    ignore_changes = [expiration_date]
-  }
-}
