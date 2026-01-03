@@ -129,6 +129,36 @@ jobs:
           echo "| Reason | ${{ github.event.inputs.reason }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Timestamp | $(date -u '+%Y-%m-%d %H:%M:%S UTC') |" >> $GITHUB_STEP_SUMMARY
 
+      - name: Send Slack Notification
+        if: always()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          STATUS="${{ job.status }}"
+          ENV="${{ github.event.inputs.environment }}"
+          if [ "$STATUS" = "success" ]; then
+            COLOR="good"
+            EMOJI="✅"
+          else
+            COLOR="danger"
+            EMOJI="❌"
+          fi
+          
+          curl -X POST -H 'Content-type: application/json' \
+            --data "{
+              \"attachments\": [{
+                \"color\": \"$COLOR\",
+                \"title\": \"$EMOJI $ENV Infrastructure Destroyed\",
+                \"fields\": [
+                  {\"title\": \"Environment\", \"value\": \"$ENV\", \"short\": true},
+                  {\"title\": \"Status\", \"value\": \"$STATUS\", \"short\": true},
+                  {\"title\": \"Destroyed by\", \"value\": \"${{ github.actor }}\", \"short\": true},
+                  {\"title\": \"Reason\", \"value\": \"${{ github.event.inputs.reason }}\", \"short\": false}
+                ]
+              }]
+            }" \
+            $SLACK_WEBHOOK_URL
+
   # ============================================
   # DESTROY PRODUCTION (Extra Safety)
   # ============================================
