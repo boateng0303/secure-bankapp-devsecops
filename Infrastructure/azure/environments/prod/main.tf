@@ -251,34 +251,42 @@ module "aks" {
 }
 
 # -----------------------------------------------------------------------------
-# MySQL
+# Azure SQL Database
 # -----------------------------------------------------------------------------
 
-module "mysql" {
-  source = "../../modules/mysql"
+module "sql_database" {
+  source = "../../modules/sql-database"
 
-  server_name         = "${local.prefix}-mysql"
+  server_name         = "${local.prefix}-sql"
   location            = local.location
   resource_group_name = module.resource_group.name
 
-  mysql_version   = "8.0.21"
-  sku_name        = "GP_Standard_D2ds_v4"
-  storage_size_gb = 128
+  # Database configuration
+  databases      = ["bankingdb"]
+  sku_name       = "S1"           # Standard tier for production
+  max_size_gb    = 50
+  zone_redundant = false          # Set to true for Premium SKUs
 
-  subnet_id           = module.networking.database_subnet_id
-  private_dns_zone_id = module.networking.mysql_private_dns_zone_id
+  # Networking - Private endpoint for production
+  allow_azure_services       = true
+  allowed_subnet_ids         = [module.networking.aks_subnet_id]
+  enable_private_endpoint    = true
+  private_endpoint_subnet_id = module.networking.private_endpoint_subnet_id
+  private_dns_zone_id        = module.networking.sql_private_dns_zone_id
 
-  high_availability_mode    = "ZoneRedundant"
-  availability_zone         = "3"
-  standby_availability_zone = "1"
+  # Backup
+  backup_retention_days      = 35
+  enable_long_term_retention = true
+  ltr_weekly_retention       = "P4W"
+  ltr_monthly_retention      = "P12M"
+  ltr_yearly_retention       = "P5Y"
 
-  backup_retention_days        = 35
-  geo_redundant_backup_enabled = true
+  # Security
+  enable_threat_detection          = true
+  threat_detection_email_addresses = var.alert_email_receivers != null ? [for r in var.alert_email_receivers : r.email] : []
 
-  databases = ["bankingdb"]
-
-  enable_audit_log = true
-
+  # Monitoring
+  enable_diagnostics         = true
   log_analytics_workspace_id = module.monitoring.log_analytics_workspace_id
 
   tags = local.common_tags
@@ -287,14 +295,14 @@ module "mysql" {
 }
 
 # -----------------------------------------------------------------------------
-# Store Secrets in Key Vault
+# Store SQL Credentials in Key Vault
 # -----------------------------------------------------------------------------
 
-resource "azurerm_key_vault_secret" "mysql_admin_password" {
-  name         = "mysql-admin-password"
-  value        = module.mysql.administrator_password
-  key_vault_id = module.keyvault.id
-  content_type = "password"
+resource "azurerm_key_vault_secret" "sql_admin_password" {
+  name            = "sql-admin-password"
+  value           = module.sql_database.administrator_password
+  key_vault_id    = module.keyvault.id
+  content_type    = "password"
   expiration_date = timeadd(timestamp(), "8760h")
 
   depends_on = [module.keyvault]
@@ -304,9 +312,9 @@ resource "azurerm_key_vault_secret" "mysql_admin_password" {
   }
 }
 
-resource "azurerm_key_vault_secret" "mysql_connection_string" {
-  name            = "mysql-connection-string"
-  value           = module.mysql.connection_string
+resource "azurerm_key_vault_secret" "sql_connection_string" {
+  name            = "sql-connection-string"
+  value           = module.sql_database.connection_string
   key_vault_id    = module.keyvault.id
   content_type    = "connection-string"
   expiration_date = timeadd(timestamp(), "8760h")
@@ -349,9 +357,8 @@ module "monitoring_alerts" {
   enable_application_insights = false
 
   enable_aks_alerts   = true
-  enable_mysql_alerts = true
+  enable_mysql_alerts = false
   aks_cluster_id      = module.aks.cluster_id
-  mysql_server_id     = module.mysql.server_id
 
   alert_email_receivers   = var.alert_email_receivers
   alert_sms_receivers     = var.alert_sms_receivers

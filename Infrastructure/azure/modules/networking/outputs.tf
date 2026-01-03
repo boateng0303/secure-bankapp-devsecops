@@ -52,6 +52,16 @@ output "acr_private_dns_zone_id" {
   value       = azurerm_private_dns_zone.acr.id
 }
 
+output "sql_private_dns_zone_id" {
+  description = "The ID of the SQL Server private DNS zone"
+  value       = azurerm_private_dns_zone.sql.id
+}
+
+output "sql_dns_zone_link_id" {
+  description = "The ID of the SQL DNS zone VNet link (use as dependency)"
+  value       = azurerm_private_dns_zone_virtual_network_link.sql.id
+}
+
 output "nat_gateway_public_ip" {
   description = "The public IP of the NAT Gateway"
   value       = var.enable_nat_gateway ? azurerm_public_ip.nat[0].ip_address : null
