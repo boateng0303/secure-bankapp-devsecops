@@ -37,9 +37,9 @@ output "keyvault_id" {
   value       = module.keyvault.id
 }
 
-output "mysql_fqdn" {
-  description = "MySQL server FQDN"
-  value       = module.mysql.server_fqdn
+output "sql_server_fqdn" {
+  description = "SQL Server FQDN"
+  value       = module.sql_database.server_fqdn
 }
 
 output "log_analytics_workspace_id" {

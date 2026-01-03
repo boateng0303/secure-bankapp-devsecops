@@ -174,6 +174,13 @@ resource "azurerm_nat_gateway" "main" {
   tags = var.tags
 }
 
+resource "azurerm_nat_gateway_public_ip_association" "nat" {
+  count = var.enable_nat_gateway ? 1 : 0
+
+  nat_gateway_id       = azurerm_nat_gateway.main[0].id
+  public_ip_address_id = azurerm_public_ip.nat[0].id
+}
+
 resource "azurerm_subnet_nat_gateway_association" "aks" {
   count = var.enable_nat_gateway ? 1 : 0
 
@@ -225,6 +232,25 @@ resource "azurerm_private_dns_zone_virtual_network_link" "acr" {
   name                  = "acr-vnet-link"
   resource_group_name   = var.resource_group_name
   private_dns_zone_name = azurerm_private_dns_zone.acr.name
+  virtual_network_id    = azurerm_virtual_network.main.id
+
+  depends_on = [azurerm_virtual_network.main]
+}
+
+# ---------------------------------------------------------------------------
+# SQL Server Private DNS Zone
+# ---------------------------------------------------------------------------
+
+resource "azurerm_private_dns_zone" "sql" {
+  name                = "privatelink.database.windows.net"
+  resource_group_name = var.resource_group_name
+  tags                = var.tags
+}
+
+resource "azurerm_private_dns_zone_virtual_network_link" "sql" {
+  name                  = "sql-vnet-link"
+  resource_group_name   = var.resource_group_name
+  private_dns_zone_name = azurerm_private_dns_zone.sql.name
   virtual_network_id    = azurerm_virtual_network.main.id
 
   depends_on = [azurerm_virtual_network.main]
