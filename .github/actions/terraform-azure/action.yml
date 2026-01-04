@@ -546,7 +546,26 @@ runs:
       shell: bash
       working-directory: ${{ inputs.working-directory }}/${{ inputs.environment }}
       run: |
-        if [ "${{ steps.plan.outputs.exitcode }}" == "2" ]; then
+        # Run refresh-only plan to detect actual infrastructure drift
+        # This compares Azure reality vs Terraform state (not config vs state)
+        echo "Running terraform plan -refresh-only to detect drift..."
+        
+        terraform plan \
+          -refresh-only \
+          -input=false \
+          -no-color \
+          -detailed-exitcode \
+          -lock-timeout=${{ inputs.lock-timeout }} \
+          2>&1 | tee drift_output.txt
+        
+        DRIFT_EXIT_CODE=${PIPESTATUS[0]}
+        
+        # Exit codes for -detailed-exitcode:
+        # 0 = No changes (no drift)
+        # 1 = Error
+        # 2 = Changes detected (drift!)
+        
+        if [ $DRIFT_EXIT_CODE -eq 2 ]; then
           echo "drift_detected=true" >> $GITHUB_OUTPUT
           echo "::warning::Infrastructure drift detected!"
           
@@ -556,11 +575,28 @@ runs:
           echo "**Status:** ⚠️ Drift Detected" >> $GITHUB_STEP_SUMMARY
           echo "**Environment:** ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
           echo "**Timestamp:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "<details>" >> $GITHUB_STEP_SUMMARY
+          echo "<summary>📋 Drift Details</summary>" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          # Filter only the relevant drift info (changes section)
+          sed -n '/Note: Objects have changed/,/This is a refresh-only plan/p' drift_output.txt >> $GITHUB_STEP_SUMMARY || cat drift_output.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "</details>" >> $GITHUB_STEP_SUMMARY
+        elif [ $DRIFT_EXIT_CODE -eq 1 ]; then
+          echo "drift_detected=false" >> $GITHUB_OUTPUT
+          echo "::error::Terraform refresh-only plan failed"
+          echo "## 🔄 Drift Detection Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ❌ Error during drift detection" >> $GITHUB_STEP_SUMMARY
         else
           echo "drift_detected=false" >> $GITHUB_OUTPUT
           echo "## 🔄 Drift Detection Report" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Status:** ✅ No Drift" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Timestamp:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
         fi
 
     # ============================================
