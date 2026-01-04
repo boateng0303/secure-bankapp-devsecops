@@ -43,10 +43,6 @@ jobs:
           - dev
           - staging
           - prod
-    outputs:
-      drift_dev: ${{ steps.drift.outputs.drift_detected }}
-      drift_staging: ${{ steps.drift.outputs.drift_detected }}
-      drift_prod: ${{ steps.drift.outputs.drift_detected }}
     
     steps:
       - name: Check if should run
@@ -82,10 +78,25 @@ jobs:
           github-token: ${{ secrets.MY_TOKEN }}
           plan-title: '🔄 Drift Detection'
 
-      - name: Set Output
-        if: steps.should-run.outputs.should_run == 'true'
+      - name: Save Drift Result
+        if: always()
         run: |
-          echo "drift_${{ matrix.environment }}=${{ steps.drift.outputs.drift-detected }}" >> $GITHUB_OUTPUT
+          mkdir -p drift-results
+          DRIFT_STATUS="${{ steps.drift.outputs.drift-detected }}"
+          # Default to false if step was skipped or no output
+          if [ -z "$DRIFT_STATUS" ]; then
+            DRIFT_STATUS="skipped"
+          fi
+          echo "{\"environment\": \"${{ matrix.environment }}\", \"drift_detected\": \"$DRIFT_STATUS\"}" > drift-results/${{ matrix.environment }}.json
+          cat drift-results/${{ matrix.environment }}.json
+
+      - name: Upload Drift Result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: drift-result-${{ matrix.environment }}
+          path: drift-results/${{ matrix.environment }}.json
+          retention-days: 1
 
   # ============================================
   # DRIFT REPORT & NOTIFICATION
@@ -96,26 +107,50 @@ jobs:
     needs: detect-drift
     if: always()
     steps:
+      - name: Download All Drift Results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: drift-result-*
+          path: drift-results
+          merge-multiple: false
+
       - name: Check for Drift
         id: check-drift
         run: |
-          DRIFT_DEV="${{ needs.detect-drift.outputs.drift_dev }}"
-          DRIFT_STAGING="${{ needs.detect-drift.outputs.drift_staging }}"
-          DRIFT_PROD="${{ needs.detect-drift.outputs.drift_prod }}"
+          # Read drift results from artifacts
+          DRIFT_DEV="N/A"
+          DRIFT_STAGING="N/A"
+          DRIFT_PROD="N/A"
           
+          # Check each environment's result file
+          if [ -f "drift-results/drift-result-dev/dev.json" ]; then
+            DRIFT_DEV=$(cat drift-results/drift-result-dev/dev.json | jq -r '.drift_detected')
+          fi
+          if [ -f "drift-results/drift-result-staging/staging.json" ]; then
+            DRIFT_STAGING=$(cat drift-results/drift-result-staging/staging.json | jq -r '.drift_detected')
+          fi
+          if [ -f "drift-results/drift-result-prod/prod.json" ]; then
+            DRIFT_PROD=$(cat drift-results/drift-result-prod/prod.json | jq -r '.drift_detected')
+          fi
+          
+          echo "Dev drift: $DRIFT_DEV"
+          echo "Staging drift: $DRIFT_STAGING"
+          echo "Prod drift: $DRIFT_PROD"
+          
+          # Check if any environment has drift
           if [ "$DRIFT_DEV" == "true" ] || [ "$DRIFT_STAGING" == "true" ] || [ "$DRIFT_PROD" == "true" ]; then
             echo "any_drift=true" >> $GITHUB_OUTPUT
           else
             echo "any_drift=false" >> $GITHUB_OUTPUT
           fi
           
-          # For issue body
+          # For issue body - create markdown table
           echo "drift_summary<<EOF" >> $GITHUB_OUTPUT
           echo "| Environment | Drift Detected |" >> $GITHUB_OUTPUT
           echo "|-------------|----------------|" >> $GITHUB_OUTPUT
-          echo "| Dev | ${DRIFT_DEV:-N/A} |" >> $GITHUB_OUTPUT
-          echo "| Staging | ${DRIFT_STAGING:-N/A} |" >> $GITHUB_OUTPUT
-          echo "| Production | ${DRIFT_PROD:-N/A} |" >> $GITHUB_OUTPUT
+          echo "| Dev | ${DRIFT_DEV} |" >> $GITHUB_OUTPUT
+          echo "| Staging | ${DRIFT_STAGING} |" >> $GITHUB_OUTPUT
+          echo "| Production | ${DRIFT_PROD} |" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Generate Summary
