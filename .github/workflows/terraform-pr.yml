@@ -90,7 +90,7 @@ jobs:
           enable-security-scan: 'true'
           enable-cost-estimation: 'true'
           infracost-api-key: ${{ secrets.INFRACOST_API_KEY }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.MY_TOKEN }}
           plan-title: '🏗️ Terraform Plan'
 
   # ============================================

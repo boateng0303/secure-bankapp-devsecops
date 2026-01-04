@@ -24,7 +24,7 @@ output "database_subnet_id" {
 
 output "appgw_subnet_id" {
   description = "The ID of the Application Gateway subnet"
-  value       = var.enable_application_gateway ? azurerm_subnet.application_gateway[0].id : null
+  value       = try(azurerm_subnet.application_gateway[0].id, null)
 }
 
 output "private_endpoint_subnet_id" {
@@ -64,5 +64,5 @@ output "sql_dns_zone_link_id" {
 
 output "nat_gateway_public_ip" {
   description = "The public IP of the NAT Gateway"
-  value       = var.enable_nat_gateway ? azurerm_public_ip.nat[0].ip_address : null
+  value       = try(azurerm_public_ip.nat[0].ip_address, null)
 }
