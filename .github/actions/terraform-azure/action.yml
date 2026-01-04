@@ -546,10 +546,8 @@ runs:
       shell: bash
       working-directory: ${{ inputs.working-directory }}/${{ inputs.environment }}
       run: |
-        # Disable exit on error to properly capture terraform exit code
+        # Disable exit on error to capture terraform output even on failure
         set +e
-        # Make pipeline return terraform's exit code, not tee's
-        set -o pipefail
         
         # Run refresh-only plan to detect actual infrastructure drift
         # This compares Azure reality vs Terraform state (not config vs state)
@@ -559,23 +557,29 @@ runs:
           -refresh-only \
           -input=false \
           -no-color \
-          -detailed-exitcode \
           -lock-timeout=${{ inputs.lock-timeout }} \
           2>&1 | tee drift_output.txt
         
-        DRIFT_EXIT_CODE=$?
+        TERRAFORM_EXIT_CODE=$?
+        echo "Terraform exit code: $TERRAFORM_EXIT_CODE"
         
-        # Debug: show the exit code
-        echo "Terraform exit code: $DRIFT_EXIT_CODE"
+        # Check for errors first
+        if [ $TERRAFORM_EXIT_CODE -ne 0 ]; then
+          echo "drift_detected=false" >> $GITHUB_OUTPUT
+          echo "::error::Terraform refresh-only plan failed with exit code $TERRAFORM_EXIT_CODE"
+          echo "## 🔄 Drift Detection Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ❌ Error during drift detection" >> $GITHUB_STEP_SUMMARY
+          echo "**Exit Code:** $TERRAFORM_EXIT_CODE" >> $GITHUB_STEP_SUMMARY
+          exit 0  # Don't fail the workflow, just report the error
+        fi
         
-        # Exit codes for -detailed-exitcode:
-        # 0 = No changes (no drift)
-        # 1 = Error
-        # 2 = Changes detected (drift!)
-        
-        if [ $DRIFT_EXIT_CODE -eq 2 ]; then
+        # Parse output to detect drift (more reliable than exit codes for refresh-only)
+        # Terraform shows "Objects have changed outside of Terraform" when drift exists
+        if grep -q "Objects have changed outside of Terraform" drift_output.txt; then
           echo "drift_detected=true" >> $GITHUB_OUTPUT
           echo "::warning::Infrastructure drift detected!"
+          echo "Drift detected: Output contains 'Objects have changed outside of Terraform'"
           
           # Create drift report
           echo "## 🔄 Drift Detection Report" >> $GITHUB_STEP_SUMMARY
@@ -592,14 +596,9 @@ runs:
           sed -n '/Note: Objects have changed/,/This is a refresh-only plan/p' drift_output.txt >> $GITHUB_STEP_SUMMARY || cat drift_output.txt >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           echo "</details>" >> $GITHUB_STEP_SUMMARY
-        elif [ $DRIFT_EXIT_CODE -eq 1 ]; then
-          echo "drift_detected=false" >> $GITHUB_OUTPUT
-          echo "::error::Terraform refresh-only plan failed"
-          echo "## 🔄 Drift Detection Report" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Status:** ❌ Error during drift detection" >> $GITHUB_STEP_SUMMARY
         else
           echo "drift_detected=false" >> $GITHUB_OUTPUT
+          echo "No drift detected: Output does not contain drift indicator"
           echo "## 🔄 Drift Detection Report" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Status:** ✅ No Drift" >> $GITHUB_STEP_SUMMARY
