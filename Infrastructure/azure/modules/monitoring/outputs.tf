@@ -26,18 +26,18 @@ output "log_analytics_secondary_key" {
 
 output "application_insights_id" {
   description = "The ID of Application Insights"
-  value       = var.enable_application_insights ? azurerm_application_insights.main[0].id : null
+  value       = try(azurerm_application_insights.main[0].id, null)
 }
 
 output "application_insights_instrumentation_key" {
   description = "Instrumentation key for Application Insights"
-  value       = var.enable_application_insights ? azurerm_application_insights.main[0].instrumentation_key : null
+  value       = try(azurerm_application_insights.main[0].instrumentation_key, null)
   sensitive   = true
 }
 
 output "application_insights_connection_string" {
   description = "Connection string for Application Insights"
-  value       = var.enable_application_insights ? azurerm_application_insights.main[0].connection_string : null
+  value       = try(azurerm_application_insights.main[0].connection_string, null)
   sensitive   = true
 }
 
