@@ -548,6 +548,8 @@ runs:
       run: |
         # Disable exit on error to properly capture terraform exit code
         set +e
+        # Make pipeline return terraform's exit code, not tee's
+        set -o pipefail
         
         # Run refresh-only plan to detect actual infrastructure drift
         # This compares Azure reality vs Terraform state (not config vs state)
@@ -561,7 +563,7 @@ runs:
           -lock-timeout=${{ inputs.lock-timeout }} \
           2>&1 | tee drift_output.txt
         
-        DRIFT_EXIT_CODE=${PIPESTATUS[0]}
+        DRIFT_EXIT_CODE=$?
         
         # Debug: show the exit code
         echo "Terraform exit code: $DRIFT_EXIT_CODE"
