@@ -546,6 +546,9 @@ runs:
       shell: bash
       working-directory: ${{ inputs.working-directory }}/${{ inputs.environment }}
       run: |
+        # Disable exit on error to properly capture terraform exit code
+        set +e
+        
         # Run refresh-only plan to detect actual infrastructure drift
         # This compares Azure reality vs Terraform state (not config vs state)
         echo "Running terraform plan -refresh-only to detect drift..."
@@ -559,6 +562,9 @@ runs:
           2>&1 | tee drift_output.txt
         
         DRIFT_EXIT_CODE=${PIPESTATUS[0]}
+        
+        # Debug: show the exit code
+        echo "Terraform exit code: $DRIFT_EXIT_CODE"
         
         # Exit codes for -detailed-exitcode:
         # 0 = No changes (no drift)
