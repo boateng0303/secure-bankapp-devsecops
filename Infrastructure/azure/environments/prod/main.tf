@@ -233,7 +233,7 @@ module "aks" {
   spot_node_pool_vm_size   = "Standard_DC4ds_v3"
   spot_node_pool_max_count = 10
 
-  availability_zones = ["1", "2", "3"]
+  availability_zones = []
   max_pods_per_node  = 50
 
   enable_azure_rbac      = true
@@ -270,30 +270,6 @@ resource "azurerm_recovery_services_vault" "main" {
 }
 
 # -----------------------------------------------------------------------------
-# Monitoring Alerts for Resources
+# NOTE: Monitoring alerts are configured in the main monitoring module
+# The base monitoring module creates action groups for alerts
 # -----------------------------------------------------------------------------
-
-module "monitoring_alerts" {
-  source = "../../modules/monitoring"
-
-  prefix              = "${local.prefix}-alerts"
-  location            = local.location
-  resource_group_name = module.resource_group.name
-  subscription_id     = data.azurerm_subscription.current.subscription_id
-
-  log_analytics_name          = "${local.prefix}-law"
-  enable_container_insights   = false
-  enable_application_insights = false
-
-  enable_aks_alerts   = true
-  enable_mysql_alerts = false
-  aks_cluster_id      = module.aks.cluster_id
-
-  alert_email_receivers   = var.alert_email_receivers
-  alert_sms_receivers     = var.alert_sms_receivers
-  alert_webhook_receivers = var.alert_webhook_receivers
-
-  tags = local.common_tags
-
-  depends_on = [module.monitoring]
-}

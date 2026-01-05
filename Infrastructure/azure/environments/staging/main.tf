@@ -222,7 +222,7 @@ module "aks" {
   user_node_pool_max_count = 8
 
   enable_spot_node_pool = true
-  availability_zones    = ["1", "2"]
+  availability_zones    = []
 
   enable_azure_rbac      = true
   admin_group_object_ids = var.aks_admin_group_ids
@@ -242,30 +242,6 @@ module "aks" {
 # -----------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------
-# Monitoring Alerts
+# NOTE: Monitoring alerts are configured in the main monitoring module
+# The base monitoring module creates action groups for alerts
 # -----------------------------------------------------------------------------
-
-module "monitoring_alerts" {
-  source = "../../modules/monitoring"
-
-  prefix              = "${local.prefix}-alerts"
-  location            = local.location
-  resource_group_name = module.resource_group.name
-  subscription_id     = data.azurerm_subscription.current.subscription_id
-
-  log_analytics_name          = "${local.prefix}-law"
-  enable_container_insights   = false
-  enable_application_insights = false
-
-  enable_aks_alerts   = true
-  enable_mysql_alerts = false
-  aks_cluster_id      = module.aks.cluster_id
-
-  alert_email_receivers   = var.alert_email_receivers
-  alert_sms_receivers     = var.alert_sms_receivers
-  alert_webhook_receivers = var.alert_webhook_receivers
-
-  tags = local.common_tags
-
-  depends_on = [module.monitoring]
-}
