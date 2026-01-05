@@ -276,11 +276,153 @@ jobs:
               }
             }
 
+      - name: Checkout for CLI
+        if: steps.check-drift.outputs.any_drift == 'true'
+        uses: actions/checkout@v4
+
+      - name: Auto-Fix Drift
+        if: steps.check-drift.outputs.any_drift == 'true'
+        id: auto-fix
+        env:
+          GH_TOKEN: ${{ secrets.MY_TOKEN }}
+        run: |
+          echo "🔧 Auto-fixing detected drift..."
+          
+          FIXED_ENVS=""
+          FAILED_ENVS=""
+          
+          # Check and fix dev
+          if [ -f "drift-results/drift-result-dev/dev.json" ]; then
+            DEV_DRIFT=$(cat drift-results/drift-result-dev/dev.json | jq -r '.drift_detected')
+            if [ "$DEV_DRIFT" == "true" ]; then
+              echo "🔄 Triggering apply for dev environment..."
+              if gh workflow run terraform-deploy.yml -f environment=dev -f action=apply; then
+                FIXED_ENVS="$FIXED_ENVS dev"
+                echo "✅ Dev fix triggered successfully"
+              else
+                FAILED_ENVS="$FAILED_ENVS dev"
+                echo "❌ Failed to trigger dev fix"
+              fi
+            fi
+          fi
+          
+          # Check and fix staging
+          if [ -f "drift-results/drift-result-staging/staging.json" ]; then
+            STAGING_DRIFT=$(cat drift-results/drift-result-staging/staging.json | jq -r '.drift_detected')
+            if [ "$STAGING_DRIFT" == "true" ]; then
+              echo "🔄 Triggering apply for staging environment..."
+              if gh workflow run terraform-deploy.yml -f environment=staging -f action=apply; then
+                FIXED_ENVS="$FIXED_ENVS staging"
+                echo "✅ Staging fix triggered successfully"
+              else
+                FAILED_ENVS="$FAILED_ENVS staging"
+                echo "❌ Failed to trigger staging fix"
+              fi
+            fi
+          fi
+          
+          # Check and fix prod
+          if [ -f "drift-results/drift-result-prod/prod.json" ]; then
+            PROD_DRIFT=$(cat drift-results/drift-result-prod/prod.json | jq -r '.drift_detected')
+            if [ "$PROD_DRIFT" == "true" ]; then
+              echo "⚠️ Production drift detected - triggering apply..."
+              if gh workflow run terraform-deploy.yml -f environment=prod -f action=apply; then
+                FIXED_ENVS="$FIXED_ENVS prod"
+                echo "✅ Prod fix triggered successfully"
+              else
+                FAILED_ENVS="$FAILED_ENVS prod"
+                echo "❌ Failed to trigger prod fix"
+              fi
+            fi
+          fi
+          
+          echo "fixed_environments=${FIXED_ENVS# }" >> $GITHUB_OUTPUT
+          echo "failed_environments=${FAILED_ENVS# }" >> $GITHUB_OUTPUT
+          echo ""
+          echo "📊 Summary:"
+          echo "  Fixed: $FIXED_ENVS"
+          echo "  Failed: $FAILED_ENVS"
+
       - name: Send Slack Notification
         if: steps.check-drift.outputs.any_drift == 'true'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
-          echo "📨 Sending Slack notification..."
-          # Uncomment and configure for Slack
-          # curl -X POST -H 'Content-type: application/json' \
-          #   --data '{"text":"⚠️ Infrastructure drift detected! Check GitHub Actions for details."}' \
-          #   ${{ secrets.SLACK_WEBHOOK_URL }}
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          FIXED_ENVS="${{ steps.auto-fix.outputs.fixed_environments }}"
+          FAILED_ENVS="${{ steps.auto-fix.outputs.failed_environments }}"
+          
+          # Determine status
+          if [ -z "$FAILED_ENVS" ]; then
+            STATUS_EMOJI="✅"
+            STATUS_TEXT="Auto-fix triggered successfully"
+          else
+            STATUS_EMOJI="⚠️"
+            STATUS_TEXT="Some environments failed to trigger"
+          fi
+          
+          curl -X POST -H 'Content-type: application/json' \
+            --data "{
+              \"blocks\": [
+                {
+                  \"type\": \"header\",
+                  \"text\": {
+                    \"type\": \"plain_text\",
+                    \"text\": \"🚨 Infrastructure Drift Detected & Auto-Fixed\",
+                    \"emoji\": true
+                  }
+                },
+                {
+                  \"type\": \"section\",
+                  \"fields\": [
+                    {
+                      \"type\": \"mrkdwn\",
+                      \"text\": \"*Repository:*\n${{ github.repository }}\"
+                    },
+                    {
+                      \"type\": \"mrkdwn\",
+                      \"text\": \"*Detected At:*\n$(date -u '+%Y-%m-%d %H:%M UTC')\"
+                    }
+                  ]
+                },
+                {
+                  \"type\": \"section\",
+                  \"text\": {
+                    \"type\": \"mrkdwn\",
+                    \"text\": \"*Drift Summary:*\n\`\`\`${{ steps.check-drift.outputs.drift_summary }}\`\`\`\"
+                  }
+                },
+                {
+                  \"type\": \"divider\"
+                },
+                {
+                  \"type\": \"section\",
+                  \"fields\": [
+                    {
+                      \"type\": \"mrkdwn\",
+                      \"text\": \"*$STATUS_EMOJI Auto-Fix Status:*\n$STATUS_TEXT\"
+                    },
+                    {
+                      \"type\": \"mrkdwn\",
+                      \"text\": \"*Environments Fixed:*\n\`$FIXED_ENVS\`\"
+                    }
+                  ]
+                },
+                {
+                  \"type\": \"actions\",
+                  \"elements\": [
+                    {
+                      \"type\": \"button\",
+                      \"text\": {
+                        \"type\": \"plain_text\",
+                        \"text\": \"📋 View Drift Details\",
+                        \"emoji\": true
+                      },
+                      \"url\": \"$RUN_URL\",
+                      \"style\": \"primary\"
+                    }
+                  ]
+                }
+              ]
+            }" \
+            $SLACK_WEBHOOK_URL
