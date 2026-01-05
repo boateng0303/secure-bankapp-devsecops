@@ -168,7 +168,7 @@ module "acr" {
 module "keyvault" {
   source = "../../modules/keyvault"
 
-  name                = "${var.project_name}-${local.environment}-kv-${random_string.suffix.result}"
+  name                = "${var.project_name}-stg-kv-${random_string.suffix.result}"
   location            = local.location
   resource_group_name = module.resource_group.name
 
