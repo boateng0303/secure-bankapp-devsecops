@@ -214,15 +214,12 @@ module "aks" {
   private_cluster_enabled = false
   sku_tier                = "Free"
 
-  system_node_pool_vm_size   = "Standard_DC2ds_v3"
+  system_node_pool_vm_size   = "Standard_B2ms"
   system_node_pool_count     = 1
   system_node_pool_min_count = 1
   system_node_pool_max_count = 3
 
-  user_node_pool_vm_size   = "Standard_DC2ds_v3"
-  user_node_pool_count     = 1
-  user_node_pool_min_count = 1
-  user_node_pool_max_count = 5
+  enable_user_node_pool = false  # Disabled to save vCPUs
 
   enable_spot_node_pool = false
   availability_zones    = []

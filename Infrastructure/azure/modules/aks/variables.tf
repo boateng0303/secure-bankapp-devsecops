@@ -101,6 +101,12 @@ variable "system_node_pool_max_count" {
 }
 
 # User Node Pool
+variable "enable_user_node_pool" {
+  description = "Enable user node pool"
+  type        = bool
+  default     = true
+}
+
 variable "user_node_pool_vm_size" {
   description = "VM size for user node pool"
   type        = string

@@ -15,6 +15,12 @@ resource "azurerm_virtual_network" "main" {
   dns_servers         = var.dns_servers
 
   tags = var.tags
+
+  lifecycle {
+    ignore_changes = [
+      subnet, # Azure returns inline subnet info causing drift
+    ]
+  }
 }
 
 # ---------------------------------------------------------------------------
@@ -35,6 +41,12 @@ resource "azurerm_subnet" "aks" {
   ]
 
   depends_on = [azurerm_virtual_network.main]
+
+  lifecycle {
+    ignore_changes = [
+      service_endpoint_policy_ids,
+    ]
+  }
 }
 
 resource "azurerm_subnet" "database" {
@@ -67,6 +79,13 @@ resource "azurerm_subnet" "application_gateway" {
   address_prefixes     = [var.appgw_subnet_cidr]
 
   depends_on = [azurerm_virtual_network.main]
+
+  lifecycle {
+    ignore_changes = [
+      service_endpoint_policy_ids,
+      service_endpoints,
+    ]
+  }
 }
 
 resource "azurerm_subnet" "private_endpoints" {
@@ -78,6 +97,13 @@ resource "azurerm_subnet" "private_endpoints" {
   private_endpoint_network_policies = "Disabled"
 
   depends_on = [azurerm_virtual_network.main]
+
+  lifecycle {
+    ignore_changes = [
+      service_endpoint_policy_ids,
+      service_endpoints,
+    ]
+  }
 }
 
 resource "azurerm_subnet" "bastion" {
@@ -126,6 +152,12 @@ resource "azurerm_network_security_group" "database" {
   location            = var.location
   resource_group_name = var.resource_group_name
   tags                = var.tags
+
+  lifecycle {
+    ignore_changes = [
+      security_rule, # Rules managed separately, Azure returns inline causing drift
+    ]
+  }
 }
 
 resource "azurerm_network_security_rule" "db_mysql" {
@@ -161,6 +193,13 @@ resource "azurerm_public_ip" "nat" {
   sku                 = "Standard"
 
   tags = var.tags
+
+  lifecycle {
+    ignore_changes = [
+      zones,
+      ip_tags,
+    ]
+  }
 }
 
 resource "azurerm_nat_gateway" "main" {
@@ -172,6 +211,12 @@ resource "azurerm_nat_gateway" "main" {
   sku_name            = "Standard"
 
   tags = var.tags
+
+  lifecycle {
+    ignore_changes = [
+      zones,
+    ]
+  }
 }
 
 resource "azurerm_nat_gateway_public_ip_association" "nat" {
@@ -215,6 +260,7 @@ resource "azurerm_private_dns_zone_virtual_network_link" "mysql" {
   resource_group_name   = var.resource_group_name
   private_dns_zone_name = azurerm_private_dns_zone.mysql.name
   virtual_network_id    = azurerm_virtual_network.main.id
+  tags                  = var.tags
 
   depends_on = [azurerm_virtual_network.main]
 }
@@ -233,6 +279,7 @@ resource "azurerm_private_dns_zone_virtual_network_link" "acr" {
   resource_group_name   = var.resource_group_name
   private_dns_zone_name = azurerm_private_dns_zone.acr.name
   virtual_network_id    = azurerm_virtual_network.main.id
+  tags                  = var.tags
 
   depends_on = [azurerm_virtual_network.main]
 }
@@ -252,6 +299,7 @@ resource "azurerm_private_dns_zone_virtual_network_link" "sql" {
   resource_group_name   = var.resource_group_name
   private_dns_zone_name = azurerm_private_dns_zone.sql.name
   virtual_network_id    = azurerm_virtual_network.main.id
+  tags                  = var.tags
 
   depends_on = [azurerm_virtual_network.main]
 }

@@ -50,6 +50,8 @@ resource "azurerm_log_analytics_solution" "container_insights" {
     publisher = "Microsoft"
     product   = "OMSGallery/ContainerInsights"
   }
+
+  tags = var.tags
 }
 
 resource "azurerm_log_analytics_solution" "security_insights" {
@@ -65,6 +67,8 @@ resource "azurerm_log_analytics_solution" "security_insights" {
     publisher = "Microsoft"
     product   = "OMSGallery/SecurityInsights"
   }
+
+  tags = var.tags
 }
 
 # ---------------------------------------------------------------------------
@@ -371,6 +375,12 @@ resource "azurerm_monitor_scheduled_query_rules_alert_v2" "error_logs" {
   }
 
   tags = var.tags
+
+  lifecycle {
+    ignore_changes = [
+      target_resource_types,
+    ]
+  }
 }
 
 # ---------------------------------------------------------------------------

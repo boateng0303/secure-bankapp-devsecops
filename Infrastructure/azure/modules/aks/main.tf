@@ -122,7 +122,10 @@ resource "azurerm_kubernetes_cluster" "main" {
   lifecycle {
     ignore_changes = [
       default_node_pool[0].node_count,
-      kubernetes_version
+      default_node_pool[0].node_taints,
+      default_node_pool[0].zones,
+      kubernetes_version,
+      custom_ca_trust_certificates_base64,
     ]
   }
 }
@@ -132,6 +135,8 @@ resource "azurerm_kubernetes_cluster" "main" {
 # -----------------------------------------------------------------------------
 
 resource "azurerm_kubernetes_cluster_node_pool" "user" {
+  count = var.enable_user_node_pool ? 1 : 0
+
   name                  = "user"
   kubernetes_cluster_id = azurerm_kubernetes_cluster.main.id
   vm_size               = var.user_node_pool_vm_size
@@ -155,6 +160,14 @@ resource "azurerm_kubernetes_cluster_node_pool" "user" {
   }
 
   tags = var.tags
+
+  lifecycle {
+    ignore_changes = [
+      node_count,
+      node_taints,
+      zones,
+    ]
+  }
 }
 
 # -----------------------------------------------------------------------------
