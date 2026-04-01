@@ -304,18 +304,19 @@ jobs:
           cache: 'maven'
 
       - name: Run OWASP Dependency Check (Maven Plugin)
+        id: dependency-check
         working-directory: banking-app/banking-app-backend
         env:
           NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
         run: |
-          mkdir -p ../../reports
+          mkdir -p $GITHUB_WORKSPACE/reports
           mvn org.owasp:dependency-check-maven:check \
             -DfailBuildOnCVSS=9 \
             -Dformat=HTML \
-            -DoutputDirectory=../../reports \
+            -DoutputDirectory=$GITHUB_WORKSPACE/reports \
             -DretireJsAnalyzerEnabled=true \
             -DossindexAnalyzerEnabled=false \
-            -DnvdApiKey="${NVD_API_KEY}"
+            -DnvdApiKey="${NVD_API_KEY}" && echo "check_result=success" >> $GITHUB_OUTPUT || echo "check_result=failure" >> $GITHUB_OUTPUT
           echo "Dependency check completed"
 
       - name: Upload Dependency Check results
@@ -323,7 +324,13 @@ jobs:
         if: always()
         with:
           name: dependency-check-report
-          path: reports/
+          path: ${{ github.workspace }}/reports/
+
+      - name: Fail if critical vulnerabilities found
+        if: steps.dependency-check.outputs.check_result == 'failure'
+        run: |
+          echo "::error::Critical vulnerabilities (CVSS >= 9) found - check the dependency-check report"
+          exit 1
 
   # ============================================
   # Email Notification
