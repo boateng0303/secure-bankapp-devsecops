@@ -195,8 +195,9 @@
         <div class="mb-4">
           <label class="block text-sm font-medium text-gray-700 mb-2">Card Type</label>
           <div class="grid grid-cols-3 gap-3">
-            <div *ngFor="let type of cardTypes" 
-              class="relative flex flex-col items-center p-4 border-2 rounded-xl transition-all"
+            <button *ngFor="let type of cardTypes" 
+              type="button"
+              class="relative flex flex-col items-center p-4 border-2 rounded-xl transition-all bg-transparent"
               [ngClass]="{
                 'border-blue-500 bg-blue-50': createCardForm.value.cardType === type.value && !isCardTypeDisabled(type.value),
                 'border-gray-200 hover:border-gray-300 cursor-pointer': !isCardTypeDisabled(type.value) && createCardForm.value.cardType !== type.value,
@@ -204,12 +205,8 @@
               }"
               [title]="getCardTypeTooltip(type.value)"
               (click)="!isCardTypeDisabled(type.value) && createCardForm.patchValue({cardType: type.value})"
-              (keydown.enter)="!isCardTypeDisabled(type.value) && createCardForm.patchValue({cardType: type.value})"
-              (keydown.space)="!isCardTypeDisabled(type.value) && createCardForm.patchValue({cardType: type.value})"
-              [attr.tabindex]="isCardTypeDisabled(type.value) ? -1 : 0"
-              role="button"
-              [attr.aria-pressed]="createCardForm.value.cardType === type.value"
-              [attr.aria-disabled]="isCardTypeDisabled(type.value)">
+              [disabled]="isCardTypeDisabled(type.value)"
+              [attr.aria-pressed]="createCardForm.value.cardType === type.value">
               <span class="text-2xl mb-1">{{ type.icon }}</span>
               <span class="text-sm font-medium" 
                     [ngClass]="isCardTypeDisabled(type.value) ? 'text-gray-400' : 'text-gray-700'">
