@@ -262,12 +262,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Java ${{ env.JAVA_VERSION }}
-        uses: actions/setup-java@v4
-        with:
-          java-version: ${{ env.JAVA_VERSION }}
-          distribution: 'temurin'
-
       - name: OWASP Dependency Check - Backend
         uses: dependency-check/Dependency-Check_Action@main
         with:
