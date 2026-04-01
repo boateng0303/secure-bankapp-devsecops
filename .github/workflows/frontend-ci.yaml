@@ -139,7 +139,7 @@ jobs:
       needs.build-and-test.result == 'success' &&
       (needs.check-prerequisites.result == 'success' || needs.check-prerequisites.result == 'skipped') &&
       github.ref == 'refs/heads/main' &&
-      (github.event_name == 'push' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'))
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'))
     
     outputs:
       image_tag: ${{ steps.meta.outputs.image_tag }}
