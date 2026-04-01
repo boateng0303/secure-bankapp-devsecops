@@ -1,6 +1,8 @@
 name: Backend CI/CD
 
 on:
+  workflow_dispatch:
+  
   # Chain after shared-infra completes (for initial deployment)
   workflow_run:
     workflows: ["Deploy Shared Infrastructure"]
