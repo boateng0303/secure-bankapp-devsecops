@@ -10,6 +10,38 @@ echo "NOTE: This script uses Kubernetes Gateway API with Envoy Gateway"
 echo "      as the ingress-nginx controller reached EOL in March 2026."
 echo ""
 
+# Function to wait for cert-manager webhook to be ready
+wait_for_cert_manager_webhook() {
+  echo "Waiting for cert-manager webhook to be fully ready..."
+  local max_attempts=30
+  local attempt=1
+  
+  while [ $attempt -le $max_attempts ]; do
+    echo "  Attempt $attempt/$max_attempts: Testing webhook connectivity..."
+    
+    # Try to create a test certificate issuer to verify webhook is responding
+    if kubectl apply --dry-run=server -f - <<EOF 2>/dev/null
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: test-webhook-connectivity
+spec:
+  selfSigned: {}
+EOF
+    then
+      echo "  ✅ cert-manager webhook is ready!"
+      return 0
+    fi
+    
+    echo "  Webhook not ready yet, waiting 10 seconds..."
+    sleep 10
+    attempt=$((attempt + 1))
+  done
+  
+  echo "  ⚠️ Webhook readiness check timed out, but continuing..."
+  return 0
+}
+
 # Install Gateway API CRDs
 echo "[1/4] Installing Gateway API CRDs..."
 kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.2.0/standard-install.yaml
@@ -35,6 +67,20 @@ kubectl wait --namespace envoy-gateway-system \
   deployment/envoy-gateway \
   --timeout=120s
 
+# Restart konnectivity-agent to ensure API server connectivity
+# This prevents 504 Gateway Timeout errors when communicating with webhooks
+echo ""
+echo "Ensuring API server connectivity (restarting konnectivity-agent)..."
+if kubectl get deployment konnectivity-agent -n kube-system &>/dev/null; then
+  kubectl rollout restart deployment konnectivity-agent -n kube-system
+  echo "Waiting for konnectivity-agent to be ready..."
+  sleep 30
+  kubectl rollout status deployment konnectivity-agent -n kube-system --timeout=120s || true
+  echo "✅ konnectivity-agent restarted"
+else
+  echo "  konnectivity-agent not found (may not be needed for this cluster)"
+fi
+
 # Install cert-manager
 echo ""
 echo "[3/4] Installing cert-manager..."
@@ -56,16 +102,25 @@ echo "✅ cert-manager installed (with Gateway API support)"
 
 # Wait for cert-manager deployments to be ready
 echo ""
-echo "Waiting for cert-manager to be ready..."
+echo "Waiting for cert-manager deployments to be ready..."
 kubectl wait --namespace cert-manager \
   --for=condition=Available \
   deployment/cert-manager \
-  --timeout=120s || true
+  --timeout=180s
+
+kubectl wait --namespace cert-manager \
+  --for=condition=Available \
+  deployment/cert-manager-cainjector \
+  --timeout=180s
 
 kubectl wait --namespace cert-manager \
   --for=condition=Available \
   deployment/cert-manager-webhook \
-  --timeout=120s || true
+  --timeout=180s
+
+# Wait for webhook to be fully operational (can take additional time after pod is ready)
+echo ""
+wait_for_cert_manager_webhook
 
 # Check CSI Secrets Store Driver (usually pre-installed as AKS addon)
 echo ""
