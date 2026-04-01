@@ -31,7 +31,7 @@ jobs:
     name: SonarCloud - Backend
     runs-on: ubuntu-latest
     if: ${{ github.event.inputs.scan_type == 'all' || github.event.inputs.scan_type == 'sonarcloud' }}
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -42,8 +42,8 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: ${{ env.JAVA_VERSION }}
-          distribution: 'temurin'
-          cache: 'maven'
+          distribution: temurin
+          cache: maven
 
       - name: Cache SonarCloud packages
         uses: actions/cache@v4
@@ -56,13 +56,16 @@ jobs:
         working-directory: banking-app/banking-app-backend
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_BACKEND }}
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=boateng0303_secure-bankapp-backend
+        run: |
+          mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+            -Dsonar.projectKey=boateng0303_secure-bankapp-backend \
+            -Dsonar.organization=boateng0303
 
   sonarcloud-frontend:
     name: SonarCloud - Frontend
     runs-on: ubuntu-latest
     if: ${{ github.event.inputs.scan_type == 'all' || github.event.inputs.scan_type == 'sonarcloud' }}
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -73,7 +76,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'yarn'
+          cache: yarn
           cache-dependency-path: banking-app/banking-app-frontend/yarn.lock
 
       - name: Install dependencies
@@ -81,10 +84,15 @@ jobs:
         run: yarn install --frozen-lockfile
 
       - name: SonarCloud Scan
-        #working-directory: banking-app/banking-app-frontend
         uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_FRONTEND }}
+        with:
+          projectBaseDir: banking-app/banking-app-frontend
+          args: >
+            -Dsonar.projectKey=boateng0303_secure-bankapp-frontend
+            -Dsonar.organization=boateng0303
+            -Dsonar.sources=src
 
   # ============================================
   # Trivy Scan - Pull from ACR and Scan
