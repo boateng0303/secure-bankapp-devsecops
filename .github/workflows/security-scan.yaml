@@ -392,6 +392,10 @@ jobs:
           echo "frontend_high=${FRONTEND_HIGH:-0}" >> $GITHUB_OUTPUT
           echo "scan_type=${{ github.event.inputs.scan_type }}" >> $GITHUB_OUTPUT
 
+      - name: Get current timestamp
+        id: timestamp
+        run: echo "date=$(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_OUTPUT
+
       - name: Send email notification
         uses: dawidd6/action-send-mail@v3
         with:
@@ -435,7 +439,7 @@ jobs:
                   <p><strong>Status:</strong> ${{ steps.status.outputs.status_emoji }} ${{ steps.status.outputs.overall_status }}</p>
                   <p><strong>Scan Type:</strong> ${{ steps.status.outputs.scan_type }}</p>
                   <p><strong>Triggered by:</strong> ${{ github.actor }}</p>
-                  <p><strong>Date:</strong> $(date -u +"%Y-%m-%d %H:%M:%S UTC")</p>
+                  <p><strong>Date:</strong> ${{ steps.timestamp.outputs.date }}</p>
                   
                   <h3>📊 Scan Results</h3>
                   <table>
