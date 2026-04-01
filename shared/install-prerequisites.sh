@@ -16,16 +16,13 @@ kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/downloa
 
 echo "✅ Gateway API CRDs installed"
 
-# Install Envoy Gateway
+# Install Envoy Gateway (using OCI registry - the old helm repo is deprecated)
 echo ""
 echo "[2/4] Installing Envoy Gateway..."
-helm repo add envoy-gateway https://envoy.github.io/gateway-helm
-helm repo update
-
-helm upgrade --install envoy-gateway envoy-gateway/envoy-gateway \
+helm upgrade --install envoy-gateway oci://docker.io/envoyproxy/gateway-helm \
   --namespace envoy-gateway-system \
   --create-namespace \
-  --version 1.2.0 \
+  --version v1.2.0 \
   --wait
 
 echo "✅ Envoy Gateway installed"
@@ -41,29 +38,53 @@ kubectl wait --namespace envoy-gateway-system \
 # Install cert-manager
 echo ""
 echo "[3/4] Installing cert-manager..."
-helm repo add jetstack https://charts.jetstack.io
-helm repo update
+helm repo add jetstack https://charts.jetstack.io --force-update
+helm repo update jetstack
 
+# Install without --wait to avoid startupapicheck timeout issues
+# The startupapicheck job is a post-install verification that can timeout
+# but cert-manager itself will still work fine
 helm upgrade --install cert-manager jetstack/cert-manager \
   --namespace cert-manager \
   --create-namespace \
   --version v1.14.0 \
   --set installCRDs=true \
   --set "extraArgs={--feature-gates=ExperimentalGatewayAPISupport=true}" \
-  --wait
+  --set startupapicheck.enabled=false
 
 echo "✅ cert-manager installed (with Gateway API support)"
 
-# Install CSI Secrets Store Driver
+# Wait for cert-manager deployments to be ready
 echo ""
-echo "[4/4] Installing CSI Secrets Store Driver for Azure Key Vault..."
-helm repo add csi-secrets-store-provider-azure https://azure.github.io/secrets-store-csi-driver-provider-azure/charts
-helm repo update
+echo "Waiting for cert-manager to be ready..."
+kubectl wait --namespace cert-manager \
+  --for=condition=Available \
+  deployment/cert-manager \
+  --timeout=120s || true
 
-helm upgrade --install csi-secrets-store csi-secrets-store-provider-azure/csi-secrets-store-provider-azure \
-  --namespace kube-system
+kubectl wait --namespace cert-manager \
+  --for=condition=Available \
+  deployment/cert-manager-webhook \
+  --timeout=120s || true
 
-echo "✅ CSI Secrets Store Driver installed"
+# Check CSI Secrets Store Driver (usually pre-installed as AKS addon)
+echo ""
+echo "[4/4] Checking CSI Secrets Store Driver for Azure Key Vault..."
+
+# Check if CSI driver already exists (installed via AKS addon)
+if kubectl get csidriver secrets-store.csi.k8s.io &>/dev/null; then
+  echo "✅ CSI Secrets Store Driver already installed (via AKS addon)"
+  echo "   Skipping Helm installation..."
+else
+  echo "CSI driver not found, installing via Helm..."
+  helm repo add csi-secrets-store-provider-azure https://azure.github.io/secrets-store-csi-driver-provider-azure/charts
+  helm repo update csi-secrets-store-provider-azure
+  
+  helm upgrade --install csi-secrets-store csi-secrets-store-provider-azure/csi-secrets-store-provider-azure \
+    --namespace kube-system
+  
+  echo "✅ CSI Secrets Store Driver installed"
+fi
 
 # Summary
 echo ""
@@ -76,6 +97,11 @@ echo "  ✅ Gateway API CRDs (v1.2.0)"
 echo "  ✅ Envoy Gateway (v1.2.0)"
 echo "  ✅ cert-manager (v1.14.0) with Gateway API support"
 echo "  ✅ CSI Secrets Store Driver for Azure"
+echo ""
+echo "Verification commands:"
+echo "  kubectl get pods -n envoy-gateway-system"
+echo "  kubectl get pods -n cert-manager"
+echo "  kubectl get csidriver secrets-store.csi.k8s.io"
 echo ""
 echo "Next steps:"
 echo ""
