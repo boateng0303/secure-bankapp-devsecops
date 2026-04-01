@@ -57,7 +57,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.MY_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY_BACKEND }} -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }} -Dsonar.host.url=https://sonarcloud.io -Dsonar.java.binaries=target/classes
+          SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY_BACKEND }}
+          SONAR_ORG: ${{ secrets.SONAR_ORGANIZATION }}
+        run: |
+          mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+            "-Dsonar.projectKey=${SONAR_PROJECT_KEY}" \
+            "-Dsonar.organization=${SONAR_ORG}" \
+            "-Dsonar.host.url=https://sonarcloud.io" \
+            "-Dsonar.java.binaries=target/classes"
 
   sonarcloud-frontend:
     name: SonarCloud - Frontend
@@ -85,7 +92,7 @@ jobs:
         uses: SonarSource/sonarcloud-github-action@master
         with:
           projectBaseDir: banking-app/banking-app-frontend
-          args: >
+          args: >-
             -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY_FRONTEND }}
             -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }}
             -Dsonar.sources=src
@@ -296,6 +303,8 @@ jobs:
 
       - name: Run OWASP Dependency Check (Maven Plugin)
         working-directory: banking-app/banking-app-backend
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
         run: |
           mkdir -p ../../reports
           mvn org.owasp:dependency-check-maven:check \
@@ -303,7 +312,8 @@ jobs:
             -Dformat=HTML \
             -DoutputDirectory=../../reports \
             -DretireJsAnalyzerEnabled=true \
-            -DossindexAnalyzerEnabled=false
+            -DossindexAnalyzerEnabled=false \
+            -DnvdApiKey="${NVD_API_KEY}"
           echo "Dependency check completed"
 
       - name: Upload Dependency Check results
