@@ -57,7 +57,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.MY_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar "-Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY_BACKEND }}" "-Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }}" "-Dsonar.host.url=https://sonarcloud.io" "-Dsonar.java.binaries=target/classes"
+          SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY_BACKEND }}
+          SONAR_ORG: ${{ secrets.SONAR_ORGANIZATION }}
+        run: |
+          mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+            -Dsonar.projectKey="${SONAR_PROJECT_KEY}" \
+            -Dsonar.organization="${SONAR_ORG}" \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.java.binaries=target/classes
 
   sonarcloud-frontend:
     name: SonarCloud - Frontend
@@ -85,10 +92,16 @@ jobs:
         uses: SonarSource/sonarcloud-github-action@master
         with:
           projectBaseDir: banking-app/banking-app-frontend
-          args: "-Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY_FRONTEND }} -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }} -Dsonar.sources=src -Dsonar.exclusions=**/node_modules/**,**/*.spec.ts"
+          args: >-
+            -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY }}
+            -Dsonar.organization=${{ env.SONAR_ORG }}
+            -Dsonar.sources=src
+            -Dsonar.exclusions=**/node_modules/**,**/*.spec.ts
         env:
           GITHUB_TOKEN: ${{ secrets.MY_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY_FRONTEND }}
+          SONAR_ORG: ${{ secrets.SONAR_ORGANIZATION }}
 
   # ============================================
   # Trivy Scan - Pull from ACR and Scan
