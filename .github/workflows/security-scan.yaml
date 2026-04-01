@@ -294,25 +294,17 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Download Maven dependencies
+      - name: Run OWASP Dependency Check (Maven Plugin)
         working-directory: banking-app/banking-app-backend
         run: |
-          mvn dependency:copy-dependencies -DoutputDirectory=target/dependency -DincludeScope=runtime
-          echo "Downloaded dependencies:"
-          ls -la target/dependency/ || echo "No dependencies found"
-
-      - name: OWASP Dependency Check - Backend
-        uses: dependency-check/Dependency-Check_Action@main
-        env:
-          JAVA_HOME: ""
-        with:
-          project: 'banking-backend'
-          path: 'banking-app/banking-app-backend'
-          format: 'HTML'
-          out: 'reports'
-          args: >
-            --failOnCVSS 9
-            --enableRetired
+          mkdir -p ../../reports
+          mvn org.owasp:dependency-check-maven:check \
+            -DfailBuildOnCVSS=9 \
+            -Dformat=HTML \
+            -DoutputDirectory=../../reports \
+            -DretireJsAnalyzerEnabled=true \
+            -DossindexAnalyzerEnabled=false
+          echo "Dependency check completed"
 
       - name: Upload Dependency Check results
         uses: actions/upload-artifact@v4
