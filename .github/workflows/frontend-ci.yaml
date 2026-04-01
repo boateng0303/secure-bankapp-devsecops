@@ -159,9 +159,17 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Enable ACR public access for build
+        run: |
+          echo "Temporarily enabling ACR public access for image push..."
+          az acr update --name ${{ vars.ACR_NAME }} --public-network-enabled true
+          echo "Waiting for network changes to propagate..."
+          sleep 30
+
       - name: Login to Azure Container Registry
         run: |
-          az acr login --name ${{ vars.ACR_NAME }}
+          TOKEN=$(az acr login --name ${{ vars.ACR_NAME }} --expose-token --output tsv --query accessToken)
+          echo $TOKEN | docker login ${{ vars.ACR_NAME }}.azurecr.io --username 00000000-0000-0000-0000-000000000000 --password-stdin
 
       - name: Generate image metadata
         id: meta
@@ -196,6 +204,13 @@ jobs:
           echo "| Image | \`${{ steps.meta.outputs.image_tag }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Latest | \`${{ steps.meta.outputs.image_latest }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Commit | ${{ github.sha }} |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Disable ACR public access
+        if: always()
+        run: |
+          echo "Disabling ACR public access (security)..."
+          az acr update --name ${{ vars.ACR_NAME }} --public-network-enabled false
+          echo "✅ ACR public access disabled"
 
   # ============================================
   # Update ArgoCD (Optional - triggers sync)
