@@ -117,9 +117,17 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Enable ACR public access for scan
+        run: |
+          echo "Temporarily enabling ACR public access..."
+          az acr update --name ${{ vars.ACR_NAME }} --public-network-enabled true --default-action Allow
+          echo "Waiting for network changes to propagate (60s)..."
+          sleep 60
+
       - name: Login to Azure Container Registry
         run: |
-          az acr login --name ${{ vars.ACR_NAME }}
+          TOKEN=$(az acr login --name ${{ vars.ACR_NAME }} --expose-token --output tsv --query accessToken)
+          echo $TOKEN | docker login ${{ vars.ACR_NAME }}.azurecr.io --username 00000000-0000-0000-0000-000000000000 --password-stdin
 
       - name: Pull Backend Image from ACR
         run: |
@@ -171,6 +179,13 @@ jobs:
             trivy-backend-results.json
             trivy-backend-report.html
 
+      - name: Disable ACR public access
+        if: always()
+        run: |
+          echo "Disabling ACR public access (security)..."
+          az acr update --name ${{ vars.ACR_NAME }} --public-network-enabled false --default-action Deny
+          echo "✅ ACR public access disabled"
+
   trivy-frontend:
     name: Trivy - Frontend Container
     runs-on: ubuntu-latest
@@ -191,9 +206,17 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Enable ACR public access for scan
+        run: |
+          echo "Temporarily enabling ACR public access..."
+          az acr update --name ${{ vars.ACR_NAME }} --public-network-enabled true --default-action Allow
+          echo "Waiting for network changes to propagate (60s)..."
+          sleep 60
+
       - name: Login to Azure Container Registry
         run: |
-          az acr login --name ${{ vars.ACR_NAME }}
+          TOKEN=$(az acr login --name ${{ vars.ACR_NAME }} --expose-token --output tsv --query accessToken)
+          echo $TOKEN | docker login ${{ vars.ACR_NAME }}.azurecr.io --username 00000000-0000-0000-0000-000000000000 --password-stdin
 
       - name: Pull Frontend Image from ACR
         run: |
@@ -244,6 +267,13 @@ jobs:
           path: |
             trivy-frontend-results.json
             trivy-frontend-report.html
+
+      - name: Disable ACR public access
+        if: always()
+        run: |
+          echo "Disabling ACR public access (security)..."
+          az acr update --name ${{ vars.ACR_NAME }} --public-network-enabled false --default-action Deny
+          echo "✅ ACR public access disabled"
 
   # ============================================
   # Dependency Scan
