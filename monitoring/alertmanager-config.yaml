@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: alertmanager-kube-prom-stack-kube-prometheus-alertmanager
+  namespace: monitoring
+type: Opaque
+stringData:
+  alertmanager.yaml: |
+    global:
+      resolve_timeout: 5m
+      slack_api_url: "${SLACK_WEBHOOK_URL}"
+
+    route:
+      receiver: slack-notifications
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 1h
+      routes:
+        # CrashLoopBackOff alerts → auto-remediate + slack
+        - match:
+            alertname: PodCrashLooping
+          receiver: autoremediate
+          continue: true
+
+        # High CPU alerts → auto-remediate + slack
+        - match:
+            alertname: HighPodCPU
+          receiver: autoremediate
+          continue: true
+
+    receivers:
+      # Slack notifications (default receiver)
+      - name: slack-notifications
+        slack_configs:
+          - channel: "#alerts"
+            send_resolved: true
+            color: '{{ if eq .Status "firing" }}danger{{ else }}good{{ end }}'
+            title: "{{ if eq .Status \"firing\" }}🚨🔴 FIRING{{ else }}✅ RESOLVED{{ end }} - {{ .CommonAnnotations.summary }}"
+            text: >-
+              {{ if eq .Status "firing" }}⚠️ *ALERT FIRING* ⚠️{{ else }}✅ *Alert Resolved*{{ end }}
+
+              *Alert:* {{ .CommonAnnotations.summary }}
+              *Description:* {{ .CommonAnnotations.description }}
+              *Severity:* {{ .CommonLabels.severity }}
+              *Namespace:* {{ .CommonLabels.namespace }}
+              *Pod:* {{ .CommonLabels.pod }}
+              *Status:* {{ .Status | toUpper }}
+
+      # Auto-remediation receiver (webhook to FastAPI service)
+      - name: autoremediate
+        webhook_configs:
+          - url: "http://autoremediation.monitoring.svc.cluster.local:80/alert"
+            send_resolved: true

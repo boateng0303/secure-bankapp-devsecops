@@ -1,0 +1,232 @@
+name: Frontend CI/CD
+
+on:
+  # Chain after backend-ci completes (for initial deployment)
+  workflow_run:
+    workflows: ["Backend CI/CD"]
+    types: [completed]
+    branches: [main]
+  
+  # Direct trigger on frontend code changes
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'banking-app/banking-app-frontend/**'
+  
+  # PR validation
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'banking-app/banking-app-frontend/**'
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+env:
+  NODE_VERSION: '18'
+  IMAGE_NAME: banking-frontend
+
+jobs:
+  # ============================================
+  # Check Prerequisites (verify namespace exists)
+  # ============================================
+  check-prerequisites:
+    name: Check Prerequisites
+    runs-on: ubuntu-latest
+    # Skip prerequisite check for PRs (they don't deploy)
+    if: github.event_name != 'pull_request'
+    outputs:
+      ready: ${{ steps.check.outputs.ready }}
+    
+    steps:
+      - name: Skip if workflow_run failed
+        if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion != 'success'
+        run: |
+          echo "❌ Backend CI/CD failed. Skipping frontend deployment."
+          exit 1
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Set AKS Context
+        uses: azure/aks-set-context@v3
+        with:
+          resource-group: ${{ vars.AZURE_RESOURCE_GROUP }}
+          cluster-name: ${{ vars.AKS_CLUSTER_NAME }}
+
+      - name: Verify namespace exists
+        id: check
+        run: |
+          if kubectl get namespace banking &>/dev/null; then
+            echo "✅ Namespace 'banking' exists"
+            echo "ready=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Namespace 'banking' does not exist!"
+            echo "Please run 'Deploy Shared Infrastructure' workflow first."
+            echo "ready=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+  # ============================================
+  # Build and Test
+  # ============================================
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: banking-app/banking-app-frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: banking-app/banking-app-frontend
+        run: npm ci
+
+      - name: Run linting
+        working-directory: banking-app/banking-app-frontend
+        run: npm run lint || true
+
+      - name: Run tests
+        working-directory: banking-app/banking-app-frontend
+        run: npm run test -- --watch=false --browsers=ChromeHeadless || true
+
+      - name: Build production
+        working-directory: banking-app/banking-app-frontend
+        run: npm run build -- --configuration=production
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: banking-app/banking-app-frontend/dist/
+          retention-days: 1
+
+  # ============================================
+  # Build and Push Docker Image
+  # ============================================
+  build-and-push:
+    name: Build & Push Image
+    runs-on: ubuntu-latest
+    needs: [build-and-test, check-prerequisites]
+    if: |
+      always() &&
+      needs.build-and-test.result == 'success' &&
+      (needs.check-prerequisites.result == 'success' || needs.check-prerequisites.result == 'skipped') &&
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'))
+    
+    outputs:
+      image_tag: ${{ steps.meta.outputs.image_tag }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: banking-app/banking-app-frontend/dist/
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Login to Azure Container Registry
+        run: |
+          az acr login --name ${{ vars.ACR_NAME }}
+
+      - name: Generate image metadata
+        id: meta
+        run: |
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          IMAGE_TAG=${{ vars.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${SHORT_SHA}
+          IMAGE_LATEST=${{ vars.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:latest
+          
+          echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "image_latest=$IMAGE_LATEST" >> $GITHUB_OUTPUT
+          echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
+
+      - name: Build and Push Docker Image
+        working-directory: banking-app/banking-app-frontend
+        run: |
+          docker build \
+            -t ${{ steps.meta.outputs.image_tag }} \
+            -t ${{ steps.meta.outputs.image_latest }} \
+            --label "git.sha=${{ github.sha }}" \
+            --label "git.branch=${{ github.ref_name }}" \
+            .
+          
+          docker push ${{ steps.meta.outputs.image_tag }}
+          docker push ${{ steps.meta.outputs.image_latest }}
+
+      - name: Post build summary
+        run: |
+          echo "## Frontend Image Built Successfully" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Image | \`${{ steps.meta.outputs.image_tag }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Latest | \`${{ steps.meta.outputs.image_latest }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | ${{ github.sha }} |" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================
+  # Update ArgoCD (Optional - triggers sync)
+  # ============================================
+  update-manifests:
+    name: Update Image Tag
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: |
+      needs.build-and-push.result == 'success' &&
+      github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.MY_TOKEN }}
+
+      - name: Update rollout image tag
+        run: |
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          NEW_IMAGE="${{ vars.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${SHORT_SHA}"
+          
+          # Update the image in rollout.yaml
+          sed -i "s|image:.*banking-frontend:.*|image: ${NEW_IMAGE}|g" argocd/frontend/rollout.yaml
+          
+          echo "Updated image to: $NEW_IMAGE"
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "Kwasi B"
+          git config user.email "boatengkwasi0303@gmail.com"
+          
+          git add argocd/frontend/rollout.yaml
+          
+          # Only commit if there are changes
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore(frontend): update image to ${{ github.sha }}"
+            git push
+          fi

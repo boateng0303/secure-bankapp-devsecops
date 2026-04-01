@@ -1,0 +1,154 @@
+name: Deploy Shared Infrastructure
+
+on:
+  # Manual trigger with confirmation
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "deploy" to confirm deployment'
+        required: true
+  
+  # Auto-trigger on shared config changes
+  push:
+    branches:
+      - main
+    paths:
+      - 'shared/**'
+      - '.github/workflows/shared-infra.yaml'
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+  MANAGED_IDENTITY_CLIENT_ID: ${{ vars.MANAGED_IDENTITY_CLIENT_ID }}
+  KEYVAULT_NAME: ${{ vars.KEYVAULT_NAME }}
+
+jobs:
+  deploy:
+    name: Deploy Shared Resources
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Confirm deployment (manual trigger only)
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.confirm != 'deploy'
+        run: |
+          echo "❌ Deployment cancelled. You must type 'deploy' to confirm."
+          exit 1
+
+      - name: Log trigger info
+        run: |
+          echo "🚀 Shared Infrastructure Deployment"
+          echo "Trigger: ${{ github.event_name }}"
+          if [ "${{ github.event_name }}" == "push" ]; then
+            echo "Triggered by push to: ${{ github.ref_name }}"
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Set AKS Context
+        uses: azure/aks-set-context@v3
+        with:
+          resource-group: ${{ vars.AZURE_RESOURCE_GROUP }}
+          cluster-name: ${{ vars.AKS_CLUSTER_NAME }}
+
+      - name: Verify Gateway API Prerequisites
+        run: |
+          echo "Checking Gateway API CRDs..."
+          kubectl get crd gateways.gateway.networking.k8s.io || {
+            echo "❌ Gateway API CRDs not installed. Run install-prerequisites.sh first."
+            exit 1
+          }
+          echo "Checking Envoy Gateway..."
+          kubectl get pods -n envoy-gateway-system -l app.kubernetes.io/name=envoy-gateway || {
+            echo "❌ Envoy Gateway not installed. Run install-prerequisites.sh first."
+            exit 1
+          }
+          echo "✅ Prerequisites verified"
+
+      - name: Substitute secrets in SecretProviderClass
+        run: |
+          envsubst < shared/secret-providerclass.yaml > shared/secret-providerclass-final.yaml
+
+      - name: Deploy Namespace
+        run: |
+          kubectl apply -f shared/namespace.yaml
+
+      - name: Deploy Cluster Issuer
+        run: |
+          kubectl apply -f shared/cluster-issuer.yaml
+
+      - name: Deploy ConfigMap
+        run: |
+          kubectl apply -f shared/configmap.yaml
+
+      - name: Deploy Secret Provider Class
+        run: |
+          kubectl apply -f shared/secret-providerclass-final.yaml
+
+      - name: Deploy Gateway
+        run: |
+          kubectl apply -f shared/gateway.yaml
+          echo "Waiting for Gateway to be programmed..."
+          kubectl wait --for=condition=Programmed gateway/app-gateway -n banking --timeout=120s || true
+
+      - name: Deploy HTTPRoutes
+        run: |
+          kubectl apply -f shared/httproute.yaml
+
+      - name: Verify Deployments
+        run: |
+          echo ""
+          echo "========================================="
+          echo "Deployment Verification"
+          echo "========================================="
+          echo ""
+          echo "📦 Namespace:"
+          kubectl get namespace banking
+          echo ""
+          echo "🌐 Gateway:"
+          kubectl get gateway -n banking
+          echo ""
+          echo "🔀 HTTPRoutes:"
+          kubectl get httproute -n banking
+          echo ""
+          echo "📝 ConfigMap:"
+          kubectl get configmap banking-config -n banking
+          echo ""
+          echo "🔐 SecretProviderClass:"
+          kubectl get secretproviderclass -n banking
+          echo ""
+          echo "📜 Certificate:"
+          kubectl get certificate -n banking || echo "Certificate not yet issued (this is normal)"
+          echo ""
+          echo "🌍 Gateway External IP:"
+          kubectl get gateway app-gateway -n banking -o jsonpath='{.status.addresses[0].value}' || echo "Pending..."
+          echo ""
+
+      - name: Summary
+        run: |
+          echo ""
+          echo "========================================="
+          echo "✅ Shared Infrastructure Deployed!"
+          echo "========================================="
+          echo ""
+          echo "Using: Kubernetes Gateway API with Envoy Gateway"
+          echo ""
+          echo "Next steps:"
+          echo "1. Get Gateway External IP:"
+          echo "   kubectl get gateway app-gateway -n banking"
+          echo ""
+          echo "2. Update DNS A record for kwasiboateng.lol"
+          echo ""
+          echo "3. Verify TLS certificate is issued:"
+          echo "   kubectl get certificate -n banking"
+          echo ""

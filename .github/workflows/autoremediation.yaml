@@ -1,0 +1,76 @@
+name: Deploy Autoremediation Service
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'autoremediation/**'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  IMAGE_NAME: autoremediation
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy Autoremediation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Login to Azure Container Registry
+        run: |
+          az acr login --name ${{ vars.ACR_NAME }}
+
+      - name: Build and Push Docker Image
+        working-directory: autoremediation
+        run: |
+          IMAGE_TAG=${{ vars.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          IMAGE_LATEST=${{ vars.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:latest
+          
+          docker build -t $IMAGE_TAG -t $IMAGE_LATEST .
+          docker push $IMAGE_TAG
+          docker push $IMAGE_LATEST
+          
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+
+      - name: Set AKS Context
+        uses: azure/aks-set-context@v3
+        with:
+          resource-group: ${{ vars.AZURE_RESOURCE_GROUP }}
+          cluster-name: ${{ vars.AKS_CLUSTER_NAME }}
+
+      - name: Create monitoring namespace
+        run: |
+          kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy RBAC
+        run: |
+          kubectl apply -f autoremediation/rbac.yaml
+
+      - name: Deploy Autoremediation Service
+        run: |
+          # Replace placeholder with actual image
+          sed -i "s|<your-registry>/autoremediation:latest|${{ env.IMAGE_TAG }}|g" autoremediation/deployment.yaml
+          kubectl apply -f autoremediation/deployment.yaml
+
+      - name: Verify Deployment
+        run: |
+          echo "Waiting for deployment to be ready..."
+          kubectl rollout status deployment/autoremediation -n monitoring --timeout=120s
+          echo ""
+          echo "Deployment status:"
+          kubectl get deployment,service,pod -n monitoring -l app=autoremediation

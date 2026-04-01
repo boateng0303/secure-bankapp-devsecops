@@ -1,0 +1,56 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: demo-alerts
+  namespace: monitoring
+  labels:
+    release: kube-prom-stack
+spec:
+  groups:
+  - name: banking-app.rules
+    rules:
+    # High CPU Alert - monitors banking namespace
+    - alert: HighPodCPU
+      expr: |
+        sum(rate(container_cpu_usage_seconds_total{namespace="banking", container!=""}[5m])) by (pod, namespace) > 0.5
+      for: 2m
+      labels:
+        severity: warning
+        deployment: "{{ $labels.pod | reReplaceAll \"-[a-z0-9]+-[a-z0-9]+$\" \"\" }}"
+      annotations:
+        summary: "High CPU usage on pod {{ $labels.pod }}"
+        description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is using >50% CPU for more than 2 minutes"
+
+    # CrashLoopBackOff Alert - monitors banking namespace
+    - alert: PodCrashLooping
+      expr: |
+        increase(kube_pod_container_status_restarts_total{namespace="banking"}[10m]) > 2
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Pod {{ $labels.pod }} is crash looping"
+        description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has restarted more than 2 times in the last 10 minutes"
+
+    # Pod Not Ready Alert
+    - alert: PodNotReady
+      expr: |
+        kube_pod_status_ready{namespace="banking", condition="true"} == 0
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Pod {{ $labels.pod }} is not ready"
+        description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has been not ready for more than 5 minutes"
+
+    # High Memory Alert
+    - alert: HighPodMemory
+      expr: |
+        sum(container_memory_usage_bytes{namespace="banking", container!=""}) by (pod, namespace) / 
+        sum(container_spec_memory_limit_bytes{namespace="banking", container!=""}) by (pod, namespace) > 0.85
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High memory usage on pod {{ $labels.pod }}"
+        description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is using >85% of memory limit"

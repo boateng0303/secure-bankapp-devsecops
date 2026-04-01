@@ -1,0 +1,454 @@
+name: Security Scan Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      scan_type:
+        description: 'Type of scan to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - sonarcloud
+          - trivy
+          - dependencies
+
+permissions:
+  id-token: write
+  contents: read
+  security-events: write
+
+env:
+  JAVA_VERSION: '17'
+  NODE_VERSION: '18'
+
+jobs:
+  # ============================================
+  # SonarCloud Scan - Code Quality & Security
+  # ============================================
+  sonarcloud-backend:
+    name: SonarCloud - Backend
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.scan_type == 'all' || github.event.inputs.scan_type == 'sonarcloud' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Build and analyze with SonarCloud
+        working-directory: banking-app/banking-app-backend
+        env:
+          GITHUB_TOKEN: ${{ secrets.MY_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY_BACKEND }} \
+            -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }} \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.java.binaries=target/classes
+
+  sonarcloud-frontend:
+    name: SonarCloud - Frontend
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.scan_type == 'all' || github.event.inputs.scan_type == 'sonarcloud' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: banking-app/banking-app-frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: banking-app/banking-app-frontend
+        run: npm ci
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        with:
+          projectBaseDir: banking-app/banking-app-frontend
+          args: >
+            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY_FRONTEND }}
+            -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }}
+            -Dsonar.sources=src
+            -Dsonar.exclusions=**/node_modules/**,**/*.spec.ts
+        env:
+          GITHUB_TOKEN: ${{ secrets.MY_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  # ============================================
+  # Trivy Scan - Pull from ACR and Scan
+  # ============================================
+  trivy-backend:
+    name: Trivy - Backend Container
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.scan_type == 'all' || github.event.inputs.scan_type == 'trivy' }}
+    
+    outputs:
+      critical_count: ${{ steps.parse.outputs.critical }}
+      high_count: ${{ steps.parse.outputs.high }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Login to Azure Container Registry
+        run: |
+          az acr login --name ${{ vars.ACR_NAME }}
+
+      - name: Pull Backend Image from ACR
+        run: |
+          docker pull ${{ vars.ACR_NAME }}.azurecr.io/banking-backend:latest
+          echo "IMAGE_REF=${{ vars.ACR_NAME }}.azurecr.io/banking-backend:latest" >> $GITHUB_ENV
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.IMAGE_REF }}
+          format: 'json'
+          output: 'trivy-backend-results.json'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          exit-code: '0'
+
+      - name: Parse Trivy results
+        id: parse
+        run: |
+          if [ -f trivy-backend-results.json ]; then
+            CRITICAL=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="CRITICAL")] | length' trivy-backend-results.json 2>/dev/null || echo "0")
+            HIGH=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="HIGH")] | length' trivy-backend-results.json 2>/dev/null || echo "0")
+            MEDIUM=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="MEDIUM")] | length' trivy-backend-results.json 2>/dev/null || echo "0")
+            
+            echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
+            echo "high=$HIGH" >> $GITHUB_OUTPUT
+            
+            echo "## Backend Container Scan Results" >> $GITHUB_STEP_SUMMARY
+            echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
+            echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| 🔴 Critical | $CRITICAL |" >> $GITHUB_STEP_SUMMARY
+            echo "| 🟠 High | $HIGH |" >> $GITHUB_STEP_SUMMARY
+            echo "| 🟡 Medium | $MEDIUM |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Generate Trivy HTML report
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.IMAGE_REF }}
+          format: 'template'
+          template: '@/contrib/html.tpl'
+          output: 'trivy-backend-report.html'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+
+      - name: Upload Trivy results
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-backend-results
+          path: |
+            trivy-backend-results.json
+            trivy-backend-report.html
+
+  trivy-frontend:
+    name: Trivy - Frontend Container
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.scan_type == 'all' || github.event.inputs.scan_type == 'trivy' }}
+    
+    outputs:
+      critical_count: ${{ steps.parse.outputs.critical }}
+      high_count: ${{ steps.parse.outputs.high }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Login to Azure Container Registry
+        run: |
+          az acr login --name ${{ vars.ACR_NAME }}
+
+      - name: Pull Frontend Image from ACR
+        run: |
+          docker pull ${{ vars.ACR_NAME }}.azurecr.io/banking-frontend:latest
+          echo "IMAGE_REF=${{ vars.ACR_NAME }}.azurecr.io/banking-frontend:latest" >> $GITHUB_ENV
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.IMAGE_REF }}
+          format: 'json'
+          output: 'trivy-frontend-results.json'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          exit-code: '0'
+
+      - name: Parse Trivy results
+        id: parse
+        run: |
+          if [ -f trivy-frontend-results.json ]; then
+            CRITICAL=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="CRITICAL")] | length' trivy-frontend-results.json 2>/dev/null || echo "0")
+            HIGH=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="HIGH")] | length' trivy-frontend-results.json 2>/dev/null || echo "0")
+            MEDIUM=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="MEDIUM")] | length' trivy-frontend-results.json 2>/dev/null || echo "0")
+            
+            echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
+            echo "high=$HIGH" >> $GITHUB_OUTPUT
+            
+            echo "## Frontend Container Scan Results" >> $GITHUB_STEP_SUMMARY
+            echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
+            echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| 🔴 Critical | $CRITICAL |" >> $GITHUB_STEP_SUMMARY
+            echo "| 🟠 High | $HIGH |" >> $GITHUB_STEP_SUMMARY
+            echo "| 🟡 Medium | $MEDIUM |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Generate Trivy HTML report
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.IMAGE_REF }}
+          format: 'template'
+          template: '@/contrib/html.tpl'
+          output: 'trivy-frontend-report.html'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+
+      - name: Upload Trivy results
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-frontend-results
+          path: |
+            trivy-frontend-results.json
+            trivy-frontend-report.html
+
+  # ============================================
+  # Dependency Scan
+  # ============================================
+  dependency-scan:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.scan_type == 'all' || github.event.inputs.scan_type == 'dependencies' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+
+      - name: OWASP Dependency Check - Backend
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: 'banking-backend'
+          path: 'banking-app/banking-app-backend'
+          format: 'HTML'
+          out: 'reports'
+          args: >
+            --failOnCVSS 9
+            --enableRetired
+
+      - name: Upload Dependency Check results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependency-check-report
+          path: reports/
+
+  # ============================================
+  # Email Notification
+  # ============================================
+  notify-email:
+    name: Send Email Notification
+    runs-on: ubuntu-latest
+    needs: [sonarcloud-backend, sonarcloud-frontend, trivy-backend, trivy-frontend, dependency-scan]
+    if: always()
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: scan-results
+        continue-on-error: true
+
+      - name: Determine overall status
+        id: status
+        run: |
+          SONAR_BACKEND="${{ needs.sonarcloud-backend.result }}"
+          SONAR_FRONTEND="${{ needs.sonarcloud-frontend.result }}"
+          TRIVY_BACKEND="${{ needs.trivy-backend.result }}"
+          TRIVY_FRONTEND="${{ needs.trivy-frontend.result }}"
+          DEP_SCAN="${{ needs.dependency-scan.result }}"
+          
+          BACKEND_CRITICAL="${{ needs.trivy-backend.outputs.critical_count }}"
+          BACKEND_HIGH="${{ needs.trivy-backend.outputs.high_count }}"
+          FRONTEND_CRITICAL="${{ needs.trivy-frontend.outputs.critical_count }}"
+          FRONTEND_HIGH="${{ needs.trivy-frontend.outputs.high_count }}"
+          
+          # Handle skipped jobs
+          if [[ "$SONAR_BACKEND" == "skipped" ]]; then SONAR_BACKEND="skipped"; fi
+          if [[ "$TRIVY_BACKEND" == "skipped" ]]; then TRIVY_BACKEND="skipped"; fi
+          
+          # Determine overall status
+          if [[ "$SONAR_BACKEND" == "failure" || "$SONAR_FRONTEND" == "failure" || \
+                "$TRIVY_BACKEND" == "failure" || "$TRIVY_FRONTEND" == "failure" || \
+                "$DEP_SCAN" == "failure" ]]; then
+            echo "overall_status=FAILED" >> $GITHUB_OUTPUT
+            echo "status_emoji=🔴" >> $GITHUB_OUTPUT
+          elif [[ "${BACKEND_CRITICAL:-0}" -gt 0 || "${FRONTEND_CRITICAL:-0}" -gt 0 ]]; then
+            echo "overall_status=CRITICAL VULNERABILITIES FOUND" >> $GITHUB_OUTPUT
+            echo "status_emoji=🚨" >> $GITHUB_OUTPUT
+          elif [[ "${BACKEND_HIGH:-0}" -gt 0 || "${FRONTEND_HIGH:-0}" -gt 0 ]]; then
+            echo "overall_status=HIGH VULNERABILITIES FOUND" >> $GITHUB_OUTPUT
+            echo "status_emoji=⚠️" >> $GITHUB_OUTPUT
+          else
+            echo "overall_status=PASSED" >> $GITHUB_OUTPUT
+            echo "status_emoji=✅" >> $GITHUB_OUTPUT
+          fi
+          
+          echo "backend_critical=${BACKEND_CRITICAL:-0}" >> $GITHUB_OUTPUT
+          echo "backend_high=${BACKEND_HIGH:-0}" >> $GITHUB_OUTPUT
+          echo "frontend_critical=${FRONTEND_CRITICAL:-0}" >> $GITHUB_OUTPUT
+          echo "frontend_high=${FRONTEND_HIGH:-0}" >> $GITHUB_OUTPUT
+          echo "scan_type=${{ github.event.inputs.scan_type }}" >> $GITHUB_OUTPUT
+
+      - name: Send email notification
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          secure: false
+          username: ${{ secrets.GMAIL_USERNAME }}
+          password: ${{ secrets.GMAIL_APP_PASSWORD }}
+          subject: "${{ steps.status.outputs.status_emoji }} Security Scan Report - Reuel Banking App - ${{ steps.status.outputs.overall_status }}"
+          to: ${{ secrets.NOTIFICATION_EMAIL }}
+          from: "Security Scanner <${{ secrets.GMAIL_USERNAME }}>"
+          html_body: |
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background: #1a1a2e; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+                .content { background: #f8f9fa; padding: 20px; border-radius: 0 0 8px 8px; }
+                .status-passed { color: #28a745; }
+                .status-failed { color: #dc3545; }
+                table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+                th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+                th { background: #e9ecef; }
+                .critical { color: #dc3545; font-weight: bold; }
+                .high { color: #fd7e14; font-weight: bold; }
+                .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+                .btn { display: inline-block; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; margin: 5px; }
+                .skipped { color: #6c757d; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <h1>🔒 Security Scan Report</h1>
+                  <p>Reuel Banking Application</p>
+                </div>
+                <div class="content">
+                  <h2>Scan Summary</h2>
+                  <p><strong>Status:</strong> ${{ steps.status.outputs.status_emoji }} ${{ steps.status.outputs.overall_status }}</p>
+                  <p><strong>Scan Type:</strong> ${{ steps.status.outputs.scan_type }}</p>
+                  <p><strong>Triggered by:</strong> ${{ github.actor }}</p>
+                  <p><strong>Date:</strong> $(date -u +"%Y-%m-%d %H:%M:%S UTC")</p>
+                  
+                  <h3>📊 Scan Results</h3>
+                  <table>
+                    <tr><th>Scan Type</th><th>Status</th></tr>
+                    <tr>
+                      <td>SonarCloud - Backend</td>
+                      <td>${{ needs.sonarcloud-backend.result == 'success' && '✅ Passed' || needs.sonarcloud-backend.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }}</td>
+                    </tr>
+                    <tr>
+                      <td>SonarCloud - Frontend</td>
+                      <td>${{ needs.sonarcloud-frontend.result == 'success' && '✅ Passed' || needs.sonarcloud-frontend.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }}</td>
+                    </tr>
+                    <tr>
+                      <td>Trivy - Backend</td>
+                      <td>${{ needs.trivy-backend.result == 'success' && '✅ Passed' || needs.trivy-backend.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }}</td>
+                    </tr>
+                    <tr>
+                      <td>Trivy - Frontend</td>
+                      <td>${{ needs.trivy-frontend.result == 'success' && '✅ Passed' || needs.trivy-frontend.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }}</td>
+                    </tr>
+                    <tr>
+                      <td>OWASP Dependency Check</td>
+                      <td>${{ needs.dependency-scan.result == 'success' && '✅ Passed' || needs.dependency-scan.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }}</td>
+                    </tr>
+                  </table>
+                  
+                  <h3>🐳 Container Vulnerabilities</h3>
+                  <table>
+                    <tr><th>Container</th><th class="critical">Critical</th><th class="high">High</th></tr>
+                    <tr>
+                      <td>Backend</td>
+                      <td class="critical">${{ steps.status.outputs.backend_critical }}</td>
+                      <td class="high">${{ steps.status.outputs.backend_high }}</td>
+                    </tr>
+                    <tr>
+                      <td>Frontend</td>
+                      <td class="critical">${{ steps.status.outputs.frontend_critical }}</td>
+                      <td class="high">${{ steps.status.outputs.frontend_high }}</td>
+                    </tr>
+                  </table>
+                  
+                  <h3>🔗 Quick Links</h3>
+                  <p>
+                    <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" class="btn">View Full Report</a>
+                    <a href="https://sonarcloud.io/organizations/${{ secrets.SONAR_ORGANIZATION }}/projects" class="btn">SonarCloud</a>
+                  </p>
+                </div>
+                <div class="footer">
+                  <p>Automated security scan from GitHub Actions</p>
+                  <p>Repository: ${{ github.repository }}</p>
+                </div>
+              </div>
+            </body>
+            </html>
+
+      - name: Post summary
+        run: |
+          echo "## 📧 Email Notification Sent" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Security scan results sent to: ${{ secrets.NOTIFICATION_EMAIL }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Overall Status: ${{ steps.status.outputs.status_emoji }} ${{ steps.status.outputs.overall_status }}" >> $GITHUB_STEP_SUMMARY
