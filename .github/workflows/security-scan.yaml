@@ -309,14 +309,14 @@ jobs:
         env:
           NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
         run: |
-          mkdir -p $GITHUB_WORKSPACE/reports
           mvn org.owasp:dependency-check-maven:check \
             -DfailBuildOnCVSS=9 \
             -Dformat=HTML \
-            -DoutputDirectory=$GITHUB_WORKSPACE/reports \
             -DretireJsAnalyzerEnabled=true \
             -DossindexAnalyzerEnabled=false \
             -DnvdApiKey="${NVD_API_KEY}" && echo "check_result=success" >> $GITHUB_OUTPUT || echo "check_result=failure" >> $GITHUB_OUTPUT
+          mkdir -p $GITHUB_WORKSPACE/reports
+          cp target/dependency-check-report.html $GITHUB_WORKSPACE/reports/ || true
           echo "Dependency check completed"
 
       - name: Upload Dependency Check results
