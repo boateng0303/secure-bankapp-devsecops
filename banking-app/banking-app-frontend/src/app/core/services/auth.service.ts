@@ -3,7 +3,7 @@ import { Observable, tap } from 'rxjs';
 import { ApiService } from './api.service';
 import { TokenService } from './token.service';
 import { ApiResponse } from '../../shared/models/api-response.model';
-import { AuthResponse, LoginRequest, RegisterRequest, User } from '../../shared/models/user.model';
+import { AuthResponse, LoginRequest, RegisterRequest } from '../../shared/models/user.model';
 import { Router } from '@angular/router';
 
 @Injectable({
@@ -13,9 +13,9 @@ export class AuthService {
   private currentUser: AuthResponse | null = null;
 
   constructor(
-    private apiService: ApiService,
-    private tokenService: TokenService,
-    private router: Router
+    private readonly apiService: ApiService,
+    private readonly tokenService: TokenService,
+    private readonly router: Router
   ) {}
 
   register(data: RegisterRequest): Observable<ApiResponse<AuthResponse>> {

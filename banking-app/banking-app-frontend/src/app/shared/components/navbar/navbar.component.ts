@@ -13,8 +13,8 @@ export class NavbarComponent implements OnInit {
   mobileMenuOpen = false;
 
   constructor(
-    public authService: AuthService,
-    private router: Router
+    public readonly authService: AuthService,
+    private readonly router: Router
   ) {}
 
   ngOnInit(): void {

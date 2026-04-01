@@ -8,7 +8,7 @@ import { Card, CreateCardRequest, UpdateCardLimitRequest } from '../../shared/mo
   providedIn: 'root'
 })
 export class CardService {
-  constructor(private apiService: ApiService) {}
+  constructor(private readonly apiService: ApiService) {}
 
   getAllCards(): Observable<ApiResponse<Card[]>> {
     return this.apiService.get<ApiResponse<Card[]>>('/cards');

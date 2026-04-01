@@ -8,7 +8,7 @@ import { Beneficiary, BeneficiaryRequest } from '../../shared/models/beneficiary
   providedIn: 'root'
 })
 export class BeneficiaryService {
-  constructor(private apiService: ApiService) {}
+  constructor(private readonly apiService: ApiService) {}
 
   getAllBeneficiaries(): Observable<ApiResponse<Beneficiary[]>> {
     return this.apiService.get<ApiResponse<Beneficiary[]>>('/beneficiaries');

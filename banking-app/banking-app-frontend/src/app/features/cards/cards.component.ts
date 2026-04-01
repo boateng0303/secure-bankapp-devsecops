@@ -37,9 +37,9 @@ export class CardsComponent implements OnInit {
   disabledCardTypes: string[] = []; // Card types that are unavailable for selected account
 
   constructor(
-    private cardService: CardService,
-    private accountService: AccountService,
-    private fb: FormBuilder
+    private readonly cardService: CardService,
+    private readonly accountService: AccountService,
+    private readonly fb: FormBuilder
   ) {
     this.createCardForm = this.fb.group({
       accountId: ['', Validators.required],
@@ -299,7 +299,7 @@ export class CardsComponent implements OnInit {
   }
 
   formatCardNumber(cardNumber: string): string {
-    return cardNumber.replace(/(.{4})/g, '$1 ').trim();
+    return cardNumber.replaceAll(/(.{4})/g, '$1 ').trim();
   }
 
   formatExpiryDate(date: string): string {

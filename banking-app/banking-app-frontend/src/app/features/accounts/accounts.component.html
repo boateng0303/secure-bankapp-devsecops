@@ -152,7 +152,7 @@
 <!-- Create Account Modal -->
 <div *ngIf="showCreateModal" class="fixed inset-0 z-50 overflow-y-auto">
   <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
-    <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" (click)="closeCreateModal()"></div>
+    <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" (click)="closeCreateModal()" (keydown.enter)="closeCreateModal()" (keydown.space)="closeCreateModal()" tabindex="0" role="button" aria-label="Close modal"></div>
     
     <div class="relative inline-block w-full max-w-md p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl">
       <div class="flex items-center justify-between mb-6">
@@ -174,6 +174,11 @@
         <div class="space-y-3">
           <div *ngFor="let type of getAvailableAccountTypes()" 
                (click)="selectedAccountType = type"
+               (keydown.enter)="selectedAccountType = type"
+               (keydown.space)="selectedAccountType = type"
+               tabindex="0"
+               role="button"
+               [attr.aria-pressed]="selectedAccountType === type"
                [class]="'flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ' + 
                         (selectedAccountType === type ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-primary-200')">
             <div [class]="'p-3 rounded-xl ' + (selectedAccountType === type ? 'bg-primary-100' : 'bg-gray-100')">

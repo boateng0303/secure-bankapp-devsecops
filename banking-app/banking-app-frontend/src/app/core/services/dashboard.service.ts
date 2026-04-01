@@ -8,7 +8,7 @@ import { DashboardData } from '../../shared/models/dashboard.model';
   providedIn: 'root'
 })
 export class DashboardService {
-  constructor(private apiService: ApiService) {}
+  constructor(private readonly apiService: ApiService) {}
 
   getDashboardData(): Observable<ApiResponse<DashboardData>> {
     return this.apiService.get<ApiResponse<DashboardData>>('/dashboard');

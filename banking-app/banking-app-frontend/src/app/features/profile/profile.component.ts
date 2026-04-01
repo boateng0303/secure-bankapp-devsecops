@@ -27,8 +27,8 @@ export class ProfileComponent implements OnInit {
   hideNewPassword = true;
 
   constructor(
-    private fb: FormBuilder,
-    private profileService: ProfileService
+    private readonly fb: FormBuilder,
+    private readonly profileService: ProfileService
   ) {}
 
   ngOnInit(): void {
@@ -49,7 +49,7 @@ export class ProfileComponent implements OnInit {
       newPassword: ['', [
         Validators.required,
         Validators.minLength(8),
-        Validators.pattern(/^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=]).*$/)
+        Validators.pattern(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=]).*$/)
       ]]
     });
   }

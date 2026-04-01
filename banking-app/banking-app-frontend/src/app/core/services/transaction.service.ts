@@ -8,7 +8,7 @@ import { Transaction, DepositRequest, TransferRequest, InternalTransferRequest, 
   providedIn: 'root'
 })
 export class TransactionService {
-  constructor(private apiService: ApiService) {}
+  constructor(private readonly apiService: ApiService) {}
 
   getAllTransactions(): Observable<ApiResponse<Transaction[]>> {
     return this.apiService.get<ApiResponse<Transaction[]>>('/transactions');

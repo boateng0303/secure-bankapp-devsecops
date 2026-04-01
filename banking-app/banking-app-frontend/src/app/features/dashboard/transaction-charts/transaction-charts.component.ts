@@ -280,7 +280,7 @@ export class TransactionChartsComponent implements OnInit {
 
   public areaChartType: ChartType = 'line';
 
-  constructor(private dashboardService: DashboardService) {}
+  constructor(private readonly dashboardService: DashboardService) {}
 
   ngOnInit(): void {
     this.loadChartData();

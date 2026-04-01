@@ -13,7 +13,7 @@ export interface CreateAccountRequest {
   providedIn: 'root'
 })
 export class AccountService {
-  constructor(private apiService: ApiService) {}
+  constructor(private readonly apiService: ApiService) {}
 
   getAllAccounts(): Observable<ApiResponse<Account[]>> {
     return this.apiService.get<ApiResponse<Account[]>>('/accounts');

@@ -12,7 +12,7 @@ export class DashboardComponent implements OnInit {
   loading = true;
   error = '';
 
-  constructor(private dashboardService: DashboardService) {}
+  constructor(private readonly dashboardService: DashboardService) {}
 
   ngOnInit(): void {
     this.loadDashboard();

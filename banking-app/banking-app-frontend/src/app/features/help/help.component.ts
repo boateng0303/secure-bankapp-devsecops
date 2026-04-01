@@ -16,7 +16,7 @@ export class HelpComponent implements OnInit {
   loading = true;
   expandedIndex = -1;
 
-  constructor(private apiService: ApiService) {}
+  constructor(private readonly apiService: ApiService) {}
 
   ngOnInit(): void {
     this.loadHelpData();

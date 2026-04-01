@@ -20,7 +20,7 @@ export interface ChangePasswordRequest {
   providedIn: 'root'
 })
 export class ProfileService {
-  constructor(private apiService: ApiService) {}
+  constructor(private readonly apiService: ApiService) {}
 
   getProfile(): Observable<ApiResponse<User>> {
     return this.apiService.get<ApiResponse<User>>('/profile');

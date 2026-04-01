@@ -5,7 +5,7 @@ import { TokenService } from '../services/token.service';
 
 @Injectable()
 export class JwtInterceptor implements HttpInterceptor {
-  constructor(private tokenService: TokenService) {}
+  constructor(private readonly tokenService: TokenService) {}
 
   intercept(request: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     // Add authorization header with JWT token if available

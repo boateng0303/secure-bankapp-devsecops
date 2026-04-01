@@ -19,7 +19,7 @@ export class AccountsComponent implements OnInit {
   selectedAccountType = '';
   accountTypes = ['SAVINGS', 'CHECKING', 'INVESTMENT'];
 
-  constructor(private accountService: AccountService) {}
+  constructor(private readonly accountService: AccountService) {}
 
   ngOnInit(): void {
     this.loadAccounts();
@@ -121,10 +121,12 @@ export class AccountsComponent implements OnInit {
   }
 
   getAvailableAccountTypes(): string[] {
-    const existingTypes = this.accounts
-      .filter(a => a.status === 'ACTIVE')
-      .map(a => a.accountType);
-    return this.accountTypes.filter(type => !existingTypes.includes(type));
+    const existingTypes = new Set(
+      this.accounts
+        .filter(a => a.status === 'ACTIVE')
+        .map(a => a.accountType)
+    );
+    return this.accountTypes.filter(type => !existingTypes.has(type));
   }
 
   get totalBalance(): number {

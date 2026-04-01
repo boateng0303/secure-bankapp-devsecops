@@ -24,8 +24,8 @@ export class BeneficiariesComponent implements OnInit {
   beneficiaryForm!: FormGroup;
 
   constructor(
-    private fb: FormBuilder,
-    private beneficiaryService: BeneficiaryService
+    private readonly fb: FormBuilder,
+    private readonly beneficiaryService: BeneficiaryService
   ) {}
 
   ngOnInit(): void {

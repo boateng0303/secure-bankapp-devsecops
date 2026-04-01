@@ -29,8 +29,8 @@ export class TransactionsComponent implements OnInit {
   ];
 
   constructor(
-    private transactionService: TransactionService,
-    private accountService: AccountService
+    private readonly transactionService: TransactionService,
+    private readonly accountService: AccountService
   ) {}
 
   ngOnInit(): void {
@@ -158,7 +158,7 @@ export class TransactionsComponent implements OnInit {
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
+    link.remove();
   }
 
   downloadPDF(): void {

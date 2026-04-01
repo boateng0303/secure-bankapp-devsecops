@@ -33,11 +33,11 @@ export class MoneyComponent implements OnInit {
   withdrawalMethods = ['ATM', 'BRANCH', 'ONLINE'];
 
   constructor(
-    private fb: FormBuilder,
-    private transactionService: TransactionService,
-    private accountService: AccountService,
-    private beneficiaryService: BeneficiaryService,
-    private cardService: CardService
+    private readonly fb: FormBuilder,
+    private readonly transactionService: TransactionService,
+    private readonly accountService: AccountService,
+    private readonly beneficiaryService: BeneficiaryService,
+    private readonly cardService: CardService
   ) {}
 
   ngOnInit(): void {

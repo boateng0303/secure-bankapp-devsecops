@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.Random;
+import java.security.SecureRandom;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +26,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final SecureRandom secureRandom = new SecureRandom();
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -101,10 +102,9 @@ public class AuthService {
     }
 
     private String generateAccountNumber() {
-        Random random = new Random();
         StringBuilder accountNumber = new StringBuilder();
         for (int i = 0; i < 10; i++) {
-            accountNumber.append(random.nextInt(10));
+            accountNumber.append(secureRandom.nextInt(10));
         }
         
         // Check if account number already exists

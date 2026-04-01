@@ -12,13 +12,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Random;
+import java.security.SecureRandom;
 
 @Service
 @RequiredArgsConstructor
 public class AccountService {
 
     private final AccountRepository accountRepository;
+    private final SecureRandom secureRandom = new SecureRandom();
 
     public Account getAccountById(Long id) {
         return accountRepository.findById(id)
@@ -115,10 +116,9 @@ public class AccountService {
     }
 
     public String generateAccountNumber() {
-        Random random = new Random();
         StringBuilder accountNumber = new StringBuilder();
         for (int i = 0; i < 10; i++) {
-            accountNumber.append(random.nextInt(10));
+            accountNumber.append(secureRandom.nextInt(10));
         }
         
         // Check if account number already exists
