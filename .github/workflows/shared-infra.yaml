@@ -66,6 +66,9 @@ jobs:
         with:
           kubelogin-version: 'v0.0.24'
 
+      - name: Convert kubeconfig for Azure CLI auth
+        run: kubelogin convert-kubeconfig -l azurecli
+
       - name: Verify Gateway API Prerequisites
         run: |
           echo "Checking Gateway API CRDs..."
