@@ -8,7 +8,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.5</version>
+        <version>3.4.1</version>
         <relativePath/>
     </parent>
     
@@ -21,6 +21,9 @@
     <properties>
         <java.version>17</java.version>
         <jjwt.version>0.11.5</jjwt.version>
+        <!-- Override Tomcat to latest version for CVE fixes -->
+        <tomcat.version>10.1.39</tomcat.version>
+        <log4j2.version>2.24.3</log4j2.version>
     </properties>
     
     <dependencies>
