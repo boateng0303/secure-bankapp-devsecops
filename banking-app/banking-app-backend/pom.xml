@@ -22,7 +22,7 @@
         <java.version>17</java.version>
         <jjwt.version>0.11.5</jjwt.version>
         <!-- Override Tomcat to latest version for CVE fixes -->
-        <tomcat.version>10.1.39</tomcat.version>
+        <tomcat.version>10.1.53</tomcat.version>
         <log4j2.version>2.24.3</log4j2.version>
     </properties>
     
