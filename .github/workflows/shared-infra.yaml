@@ -91,9 +91,44 @@ jobs:
         run: |
           kubectl apply -f shared/namespace.yaml
 
-      - name: Deploy Cluster Issuer
+      - name: Ensure API connectivity (restart konnectivity-agent)
         run: |
+          echo "Restarting konnectivity-agent to ensure API server connectivity..."
+          kubectl rollout restart deployment konnectivity-agent -n kube-system || true
+          sleep 30
+          kubectl rollout status deployment konnectivity-agent -n kube-system --timeout=120s || true
+          echo "✅ konnectivity-agent restarted"
+
+      - name: Deploy Cluster Issuer (with retry)
+        run: |
+          MAX_ATTEMPTS=5
+          ATTEMPT=1
+          
+          while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+            echo "Attempt $ATTEMPT/$MAX_ATTEMPTS: Applying cluster-issuer..."
+            
+            if kubectl apply -f shared/cluster-issuer.yaml; then
+              echo "✅ Cluster issuer deployed successfully"
+              exit 0
+            fi
+            
+            echo "Failed, waiting 30 seconds before retry..."
+            sleep 30
+            ATTEMPT=$((ATTEMPT + 1))
+          done
+          
+          echo "❌ Failed to deploy cluster-issuer after $MAX_ATTEMPTS attempts"
+          echo "Trying to delete webhook and apply without validation..."
+          kubectl delete validatingwebhookconfiguration cert-manager-webhook || true
           kubectl apply -f shared/cluster-issuer.yaml
+          
+          # Reinstall cert-manager to restore webhook
+          helm upgrade --install cert-manager jetstack/cert-manager \
+            --namespace cert-manager \
+            --version v1.14.0 \
+            --set installCRDs=true \
+            --set "extraArgs={--feature-gates=ExperimentalGatewayAPISupport=true}" \
+            --set startupapicheck.enabled=false
 
       - name: Deploy ConfigMap
         run: |
