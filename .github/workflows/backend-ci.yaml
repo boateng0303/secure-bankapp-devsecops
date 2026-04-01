@@ -158,7 +158,7 @@ jobs:
       - name: Enable ACR public access for build
         run: |
           echo "Temporarily enabling ACR public access for image push..."
-          az acr update --name ${{ vars.ACR_NAME }} --public-network-enabled true
+          az acr update --name ${{ vars.ACR_NAME }} --public-network-enabled true --default-action Allow
           echo "Waiting for network changes to propagate (60s)..."
           sleep 60
 
@@ -205,7 +205,7 @@ jobs:
         if: always()
         run: |
           echo "Disabling ACR public access (security)..."
-          az acr update --name ${{ vars.ACR_NAME }} --public-network-enabled false
+          az acr update --name ${{ vars.ACR_NAME }} --public-network-enabled false --default-action Deny
           echo "✅ ACR public access disabled"
 
   # ============================================
