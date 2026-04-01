@@ -57,14 +57,11 @@
     <div *ngIf="cards.length > 0" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
       <div *ngFor="let card of cards" class="relative">
         <!-- Card Visual -->
-        <div 
-          class="relative h-56 rounded-2xl p-6 text-white shadow-xl overflow-hidden cursor-pointer transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl bg-gradient-to-br"
+        <button 
+          type="button"
+          class="relative h-56 rounded-2xl p-6 text-white shadow-xl overflow-hidden cursor-pointer transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl bg-gradient-to-br w-full text-left border-0"
           [ngClass]="getCardColor(card.cardType)"
           (click)="openDetailsModal(card)"
-          (keydown.enter)="openDetailsModal(card)"
-          (keydown.space)="openDetailsModal(card)"
-          tabindex="0"
-          role="button"
           [attr.aria-label]="'View details for ' + card.cardType + ' card'">
           
           <!-- Background Pattern -->
@@ -113,7 +110,7 @@
               </div>
             </div>
           </div>
-        </div>
+        </button>
 
         <!-- Card Actions -->
         <div class="mt-4 flex gap-2">
@@ -168,7 +165,7 @@
 <!-- Create Card Modal -->
 <div *ngIf="showCreateModal" class="fixed inset-0 z-50 overflow-y-auto">
   <div class="flex items-center justify-center min-h-screen px-4">
-    <div class="fixed inset-0 bg-black/50 transition-opacity" (click)="closeCreateModal()" (keydown.enter)="closeCreateModal()" (keydown.space)="closeCreateModal()" tabindex="0" role="button" aria-label="Close modal"></div>
+    <button type="button" class="fixed inset-0 bg-black/50 transition-opacity border-0 w-full cursor-default" (click)="closeCreateModal()" aria-label="Close modal"></button>
     
     <div class="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 z-10">
       <div class="flex justify-between items-center mb-6">
@@ -227,7 +224,7 @@
                     class="absolute -top-2 -right-2 bg-gray-500 text-white text-xs px-2 py-0.5 rounded-full">
                 N/A
               </span>
-            </div>
+            </button>
           </div>
           <!-- Info messages based on disabled types -->
           <div *ngIf="disabledCardTypes.includes('VIRTUAL') && disabledCardTypes.includes('DEBIT')" 
@@ -284,7 +281,7 @@
 <!-- Card Details Modal -->
 <div *ngIf="showDetailsModal && selectedCard" class="fixed inset-0 z-50 overflow-y-auto">
   <div class="flex items-center justify-center min-h-screen px-4">
-    <div class="fixed inset-0 bg-black/50 transition-opacity" (click)="closeDetailsModal()" (keydown.enter)="closeDetailsModal()" (keydown.space)="closeDetailsModal()" tabindex="0" role="button" aria-label="Close modal"></div>
+    <button type="button" class="fixed inset-0 bg-black/50 transition-opacity border-0 w-full cursor-default" (click)="closeDetailsModal()" aria-label="Close modal"></button>
     
     <div class="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 z-10">
       <div class="flex justify-between items-center mb-6">
@@ -396,7 +393,7 @@
 <!-- Confirm Action Modal -->
 <div *ngIf="showConfirmModal && selectedCard && confirmAction" class="fixed inset-0 z-50 overflow-y-auto">
   <div class="flex items-center justify-center min-h-screen px-4">
-    <div class="fixed inset-0 bg-black/50 transition-opacity" (click)="closeConfirmModal()" (keydown.enter)="closeConfirmModal()" (keydown.space)="closeConfirmModal()" tabindex="0" role="button" aria-label="Close modal"></div>
+    <button type="button" class="fixed inset-0 bg-black/50 transition-opacity border-0 w-full cursor-default" (click)="closeConfirmModal()" aria-label="Close modal"></button>
     
     <div class="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 z-10">
       <div class="text-center mb-6">

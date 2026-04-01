@@ -136,7 +136,7 @@
 <!-- Add/Edit Beneficiary Modal -->
 <div *ngIf="showModal" class="fixed inset-0 z-50 overflow-y-auto">
   <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
-    <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" (click)="closeModal()" (keydown.enter)="closeModal()" (keydown.space)="closeModal()" tabindex="0" role="button" aria-label="Close modal"></div>
+    <button type="button" class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75 border-0 w-full cursor-default" (click)="closeModal()" aria-label="Close modal"></button>
     
     <div class="relative inline-block w-full max-w-lg p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl">
       <div class="flex items-center justify-between mb-6">

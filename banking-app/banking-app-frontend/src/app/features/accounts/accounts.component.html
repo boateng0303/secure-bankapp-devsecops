@@ -152,7 +152,7 @@
 <!-- Create Account Modal -->
 <div *ngIf="showCreateModal" class="fixed inset-0 z-50 overflow-y-auto">
   <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
-    <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" (click)="closeCreateModal()" (keydown.enter)="closeCreateModal()" (keydown.space)="closeCreateModal()" tabindex="0" role="button" aria-label="Close modal"></div>
+    <button type="button" class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75 border-0 w-full cursor-default" (click)="closeCreateModal()" aria-label="Close modal"></button>
     
     <div class="relative inline-block w-full max-w-md p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl">
       <div class="flex items-center justify-between mb-6">
@@ -172,14 +172,11 @@
         <p class="text-gray-600">Select the type of account you want to create:</p>
         
         <div class="space-y-3">
-          <div *ngFor="let type of getAvailableAccountTypes()" 
+          <button *ngFor="let type of getAvailableAccountTypes()" 
+               type="button"
                (click)="selectedAccountType = type"
-               (keydown.enter)="selectedAccountType = type"
-               (keydown.space)="selectedAccountType = type"
-               tabindex="0"
-               role="button"
                [attr.aria-pressed]="selectedAccountType === type"
-               [class]="'flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ' + 
+               [class]="'flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 w-full text-left bg-transparent ' + 
                         (selectedAccountType === type ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-primary-200')">
             <div [class]="'p-3 rounded-xl ' + (selectedAccountType === type ? 'bg-primary-100' : 'bg-gray-100')">
               <svg [class]="'w-6 h-6 ' + (selectedAccountType === type ? 'text-primary-600' : 'text-gray-600')" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -201,7 +198,7 @@
                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
               </svg>
             </div>
-          </div>
+          </button>
         </div>
 
         <div *ngIf="getAvailableAccountTypes().length === 0" class="text-center py-4">
