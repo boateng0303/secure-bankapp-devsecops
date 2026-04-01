@@ -3,15 +3,15 @@ FROM node:22-slim AS build
 WORKDIR /app
 
 # Copy package files and install dependencies (cached layer)
-COPY package*.json ./
-RUN npm ci --only=production
+COPY package.json yarn.lock ./
+RUN yarn install --frozen-lockfile
 
 # Copy source and build
 COPY . .
-RUN npm run build -- --configuration production
+RUN yarn build --configuration production
 
 # Production stage with Nginx
-FROM gcr.io/distroless/nginx:latest
+FROM nginx:alpine
 WORKDIR /usr/share/nginx/html
 
 # Remove default nginx content
