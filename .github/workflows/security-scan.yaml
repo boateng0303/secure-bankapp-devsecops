@@ -101,11 +101,11 @@ jobs:
     name: Trivy - Backend Container
     runs-on: ubuntu-latest
     if: ${{ github.event.inputs.scan_type == 'all' || github.event.inputs.scan_type == 'trivy' }}
-    
+
     outputs:
       critical_count: ${{ steps.parse.outputs.critical }}
       high_count: ${{ steps.parse.outputs.high }}
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -118,58 +118,77 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Enable ACR public access for scan
+        shell: bash
         run: |
           echo "Temporarily enabling ACR public access..."
-          az acr update --name ${{ vars.ACR_NAME }} --public-network-enabled true --default-action Allow
-          echo "Waiting for network changes to propagate (60s)..."
+          az acr update \
+            --name ${{ vars.ACR_NAME }} \
+            --public-network-enabled true \
+            --default-action Allow
+          echo "Waiting for network changes to propagate..."
           sleep 60
 
       - name: Login to Azure Container Registry
+        shell: bash
         run: |
           TOKEN=$(az acr login --name ${{ vars.ACR_NAME }} --expose-token --output tsv --query accessToken)
-          echo $TOKEN | docker login ${{ vars.ACR_NAME }}.azurecr.io --username 00000000-0000-0000-0000-000000000000 --password-stdin
+          echo "$TOKEN" | docker login ${{ vars.ACR_NAME }}.azurecr.io \
+            --username 00000000-0000-0000-0000-000000000000 \
+            --password-stdin
 
       - name: Pull Backend Image from ACR
+        shell: bash
         run: |
           docker pull ${{ vars.ACR_NAME }}.azurecr.io/banking-backend:latest
           echo "IMAGE_REF=${{ vars.ACR_NAME }}.azurecr.io/banking-backend:latest" >> $GITHUB_ENV
 
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+      - name: Run Trivy vulnerability scan (JSON)
+        uses: aquasecurity/trivy-action@57a97c7
         with:
           image-ref: ${{ env.IMAGE_REF }}
-          format: 'json'
-          output: 'trivy-backend-results.json'
-          severity: 'CRITICAL,HIGH,MEDIUM'
-          exit-code: '0'
+          format: json
+          output: trivy-backend-results.json
+          severity: CRITICAL,HIGH,MEDIUM
+          scanners: vuln
+          exit-code: 0
 
       - name: Parse Trivy results
         id: parse
+        shell: bash
         run: |
           if [ -f trivy-backend-results.json ]; then
             CRITICAL=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="CRITICAL")] | length' trivy-backend-results.json 2>/dev/null || echo "0")
             HIGH=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="HIGH")] | length' trivy-backend-results.json 2>/dev/null || echo "0")
             MEDIUM=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="MEDIUM")] | length' trivy-backend-results.json 2>/dev/null || echo "0")
-            
+
             echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
             echo "high=$HIGH" >> $GITHUB_OUTPUT
-            
-            echo "## Backend Container Scan Results" >> $GITHUB_STEP_SUMMARY
-            echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
-            echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
-            echo "| 🔴 Critical | $CRITICAL |" >> $GITHUB_STEP_SUMMARY
-            echo "| 🟠 High | $HIGH |" >> $GITHUB_STEP_SUMMARY
-            echo "| 🟡 Medium | $MEDIUM |" >> $GITHUB_STEP_SUMMARY
+
+            {
+              echo "## Backend Container Scan Results"
+              echo ""
+              echo "| Severity | Count |"
+              echo "|----------|-------|"
+              echo "| 🔴 Critical | $CRITICAL |"
+              echo "| 🟠 High | $HIGH |"
+              echo "| 🟡 Medium | $MEDIUM |"
+            } >> $GITHUB_STEP_SUMMARY
+          else
+            echo "critical=0" >> $GITHUB_OUTPUT
+            echo "high=0" >> $GITHUB_OUTPUT
+            echo "Trivy JSON report not found." >> $GITHUB_STEP_SUMMARY
           fi
 
       - name: Generate Trivy HTML report
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@57a97c7
         with:
           image-ref: ${{ env.IMAGE_REF }}
-          format: 'template'
-          template: '@/contrib/html.tpl'
-          output: 'trivy-backend-report.html'
-          severity: 'CRITICAL,HIGH,MEDIUM'
+          format: template
+          template: "@.github/trivy/html.tpl"
+          output: trivy-backend-report.html
+          severity: CRITICAL,HIGH,MEDIUM
+          scanners: vuln
+          exit-code: 0
 
       - name: Upload Trivy results
         uses: actions/upload-artifact@v4
@@ -178,23 +197,29 @@ jobs:
           path: |
             trivy-backend-results.json
             trivy-backend-report.html
+          if-no-files-found: warn
 
       - name: Disable ACR public access
         if: always()
+        shell: bash
         run: |
-          echo "Disabling ACR public access (security)..."
-          az acr update --name ${{ vars.ACR_NAME }} --public-network-enabled false --default-action Deny
-          echo "✅ ACR public access disabled"
-
+          echo "Disabling ACR public access..."
+          az acr update \
+            --name ${{ vars.ACR_NAME }} \
+            --public-network-enabled false \
+            --default-action Deny
+          echo "ACR public access disabled"
+ 
+  
   trivy-frontend:
     name: Trivy - Frontend Container
     runs-on: ubuntu-latest
     if: ${{ github.event.inputs.scan_type == 'all' || github.event.inputs.scan_type == 'trivy' }}
-    
+
     outputs:
       critical_count: ${{ steps.parse.outputs.critical }}
       high_count: ${{ steps.parse.outputs.high }}
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -207,58 +232,77 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Enable ACR public access for scan
+        shell: bash
         run: |
           echo "Temporarily enabling ACR public access..."
-          az acr update --name ${{ vars.ACR_NAME }} --public-network-enabled true --default-action Allow
-          echo "Waiting for network changes to propagate (60s)..."
+          az acr update \
+            --name ${{ vars.ACR_NAME }} \
+            --public-network-enabled true \
+            --default-action Allow
+          echo "Waiting for network changes to propagate..."
           sleep 60
 
       - name: Login to Azure Container Registry
+        shell: bash
         run: |
           TOKEN=$(az acr login --name ${{ vars.ACR_NAME }} --expose-token --output tsv --query accessToken)
-          echo $TOKEN | docker login ${{ vars.ACR_NAME }}.azurecr.io --username 00000000-0000-0000-0000-000000000000 --password-stdin
+          echo "$TOKEN" | docker login ${{ vars.ACR_NAME }}.azurecr.io \
+            --username 00000000-0000-0000-0000-000000000000 \
+            --password-stdin
 
       - name: Pull Frontend Image from ACR
+        shell: bash
         run: |
           docker pull ${{ vars.ACR_NAME }}.azurecr.io/banking-frontend:latest
           echo "IMAGE_REF=${{ vars.ACR_NAME }}.azurecr.io/banking-frontend:latest" >> $GITHUB_ENV
 
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+      - name: Run Trivy vulnerability scan (JSON)
+        uses: aquasecurity/trivy-action@57a97c7
         with:
           image-ref: ${{ env.IMAGE_REF }}
-          format: 'json'
-          output: 'trivy-frontend-results.json'
-          severity: 'CRITICAL,HIGH,MEDIUM'
-          exit-code: '0'
+          format: json
+          output: trivy-frontend-results.json
+          severity: CRITICAL,HIGH,MEDIUM
+          scanners: vuln
+          exit-code: 0
 
       - name: Parse Trivy results
         id: parse
+        shell: bash
         run: |
           if [ -f trivy-frontend-results.json ]; then
             CRITICAL=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="CRITICAL")] | length' trivy-frontend-results.json 2>/dev/null || echo "0")
             HIGH=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="HIGH")] | length' trivy-frontend-results.json 2>/dev/null || echo "0")
             MEDIUM=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="MEDIUM")] | length' trivy-frontend-results.json 2>/dev/null || echo "0")
-            
+
             echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
             echo "high=$HIGH" >> $GITHUB_OUTPUT
-            
-            echo "## Frontend Container Scan Results" >> $GITHUB_STEP_SUMMARY
-            echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
-            echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
-            echo "| 🔴 Critical | $CRITICAL |" >> $GITHUB_STEP_SUMMARY
-            echo "| 🟠 High | $HIGH |" >> $GITHUB_STEP_SUMMARY
-            echo "| 🟡 Medium | $MEDIUM |" >> $GITHUB_STEP_SUMMARY
+
+            {
+              echo "## Frontend Container Scan Results"
+              echo ""
+              echo "| Severity | Count |"
+              echo "|----------|-------|"
+              echo "| 🔴 Critical | $CRITICAL |"
+              echo "| 🟠 High | $HIGH |"
+              echo "| 🟡 Medium | $MEDIUM |"
+            } >> $GITHUB_STEP_SUMMARY
+          else
+            echo "critical=0" >> $GITHUB_OUTPUT
+            echo "high=0" >> $GITHUB_OUTPUT
+            echo "Trivy JSON report not found." >> $GITHUB_STEP_SUMMARY
           fi
 
       - name: Generate Trivy HTML report
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@57a97c7
         with:
           image-ref: ${{ env.IMAGE_REF }}
-          format: 'template'
-          template: '@/contrib/html.tpl'
-          output: 'trivy-frontend-report.html'
-          severity: 'CRITICAL,HIGH,MEDIUM'
+          format: template
+          template: "@.github/trivy/html.tpl"
+          output: trivy-frontend-report.html
+          severity: CRITICAL,HIGH,MEDIUM
+          scanners: vuln
+          exit-code: 0
 
       - name: Upload Trivy results
         uses: actions/upload-artifact@v4
@@ -267,13 +311,18 @@ jobs:
           path: |
             trivy-frontend-results.json
             trivy-frontend-report.html
+          if-no-files-found: warn
 
       - name: Disable ACR public access
         if: always()
+        shell: bash
         run: |
-          echo "Disabling ACR public access (security)..."
-          az acr update --name ${{ vars.ACR_NAME }} --public-network-enabled false --default-action Deny
-          echo "✅ ACR public access disabled"
+          echo "Disabling ACR public access..."
+          az acr update \
+            --name ${{ vars.ACR_NAME }} \
+            --public-network-enabled false \
+            --default-action Deny
+          echo "ACR public access disabled"
 
   # ============================================
   # Dependency Scan

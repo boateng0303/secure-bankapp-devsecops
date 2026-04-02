@@ -1,0 +1,120 @@
+name: OWASP ZAP Runtime Scan
+
+on:
+  workflow_dispatch:
+#   schedule:
+#     - cron: '0 2 * * *'
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  ZAP_TARGET_URL: ${{ vars.ZAP_TARGET_URL }}
+
+jobs:
+  zap-runtime-scan:
+    name: OWASP ZAP - Runtime Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Ensure ZAP target URL is set
+        shell: bash
+        run: |
+          if [ -z "${{ env.ZAP_TARGET_URL }}" ]; then
+            echo "::error::ZAP_TARGET_URL is not set."
+            exit 1
+          fi
+
+      - name: Run OWASP ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.14.0
+        with:
+          target: ${{ env.ZAP_TARGET_URL }}
+          cmd_options: >-
+            -a
+            -j
+            -m 3
+            -r zap-report.html
+            -J zap-report.json
+            -w zap-report.md
+
+      - name: Show generated ZAP files
+        if: always()
+        shell: bash
+        run: |
+          echo "Workspace: $GITHUB_WORKSPACE"
+          pwd
+          ls -lah
+          find "$GITHUB_WORKSPACE" -maxdepth 2 -type f | sort
+
+      - name: Upload ZAP results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zap-runtime-results
+          path: |
+            report_html.html
+            report_json.json
+            report_md.md
+            zap-report.html
+            zap-report.json
+            zap-report.md
+          if-no-files-found: warn
+
+  notify-email:
+    name: Send ZAP Email Notification
+    runs-on: ubuntu-latest
+    needs: [zap-runtime-scan]
+    if: ${{ always() && needs.zap-runtime-scan.result != 'success' }}
+
+    steps:
+      - name: Send email notification
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          secure: false
+          username: ${{ secrets.GMAIL_USERNAME }}
+          password: ${{ secrets.GMAIL_APP_PASSWORD }}
+          subject: "OWASP ZAP Runtime Scan Failed - ${{ github.repository }}"
+          to: ${{ secrets.NOTIFICATION_EMAIL }}
+          from: "ZAP Scanner <${{ secrets.GMAIL_USERNAME }}>"
+          html_body: |
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background: #b02a37; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+                .content { background: #f8f9fa; padding: 20px; border-radius: 0 0 8px 8px; }
+                .btn { display: inline-block; padding: 10px 20px; background: #0d6efd; color: white; text-decoration: none; border-radius: 5px; margin-top: 10px; }
+                .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <h1>OWASP ZAP Runtime Scan Alert</h1>
+                </div>
+                <div class="content">
+                  <p><strong>Status:</strong> ${{ needs.zap-runtime-scan.result }}</p>
+                  <p><strong>Repository:</strong> ${{ github.repository }}</p>
+                  <p><strong>Triggered by:</strong> ${{ github.actor }}</p>
+                  <p><strong>Target URL:</strong> ${{ env.ZAP_TARGET_URL }}</p>
+                  <p><strong>Run ID:</strong> ${{ github.run_id }}</p>
+                  <p>
+                    <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" class="btn">
+                      View workflow run
+                    </a>
+                  </p>
+                </div>
+                <div class="footer">
+                  Automated OWASP ZAP runtime scan notification
+                </div>
+              </div>
+            </body>
+            </html>
