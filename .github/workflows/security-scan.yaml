@@ -143,7 +143,7 @@ jobs:
           echo "IMAGE_REF=${{ vars.ACR_NAME }}.azurecr.io/banking-backend:latest" >> $GITHUB_ENV
 
       - name: Run Trivy vulnerability scan (JSON)
-        uses: aquasecurity/trivy-action@57a97c7
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1
         with:
           image-ref: ${{ env.IMAGE_REF }}
           format: json
@@ -257,7 +257,7 @@ jobs:
           echo "IMAGE_REF=${{ vars.ACR_NAME }}.azurecr.io/banking-frontend:latest" >> $GITHUB_ENV
 
       - name: Run Trivy vulnerability scan (JSON)
-        uses: aquasecurity/trivy-action@57a97c7
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1
         with:
           image-ref: ${{ env.IMAGE_REF }}
           format: json
