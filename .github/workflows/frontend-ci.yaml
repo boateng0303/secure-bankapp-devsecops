@@ -2,18 +2,9 @@ name: Frontend CI/CD
 
 on:
   workflow_dispatch:
-  
-  # Chain after backend-ci completes (for initial deployment)
-  workflow_run:
-    workflows: ["Backend CI/CD"]
-    types: [completed]
-    branches: [main]
-  
-  # Direct trigger on frontend code changes
   push:
     branches:
       - main
-      - develop
     paths:
       - 'banking-app/banking-app-frontend/**'
   
