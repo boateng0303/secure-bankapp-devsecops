@@ -7,9 +7,11 @@ spec:
   replicas: 3
   revisionHistoryLimit: 3
   progressDeadlineSeconds: 300
+
   selector:
     matchLabels:
       app: frontend
+
   template:
     metadata:
       labels:
@@ -21,8 +23,7 @@ spec:
           ports:
             - containerPort: 80
               name: http
-          
-          # Health checks for Nginx
+
           livenessProbe:
             httpGet:
               path: /
@@ -31,7 +32,7 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
-          
+
           readinessProbe:
             httpGet:
               path: /
@@ -40,7 +41,7 @@ spec:
             periodSeconds: 5
             timeoutSeconds: 3
             failureThreshold: 3
-          
+
           resources:
             requests:
               memory: "128Mi"
@@ -48,30 +49,30 @@ spec:
             limits:
               memory: "256Mi"
               cpu: "200m"
-  
+
   strategy:
     canary:
-      # Auto-abort if pods fail to become ready
       progressDeadlineAbort: true
-      
-      # Services for traffic routing
-      canaryService: frontend-canary
       stableService: frontend-stable
-      
-      # NGINX Ingress traffic routing
+      canaryService: frontend-canary
+
       trafficRouting:
-        nginx:
-          stableIngress: app-ingress
-          additionalIngressAnnotations:
-            canary-by-header: X-Canary
-      
-      # Canary rollout steps
+        plugins:
+          argoproj-labs/gatewayAPI:
+            httpRoutes:
+              - name: frontend-route
+
       steps:
         - setWeight: 10
-        - pause: { duration: 2m }
+        - pause:
+            duration: 2m
         - setWeight: 25
-        - pause: { duration: 2m }
+        - pause:
+            duration: 2m
         - setWeight: 50
-        - pause: { duration: 5m }
+        - pause:
+            duration: 5m
         - setWeight: 75
-        - pause: { duration: 2m }
+        - pause:
+            duration: 2m
+        - setWeight: 100

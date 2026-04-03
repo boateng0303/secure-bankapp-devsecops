@@ -7,9 +7,11 @@ spec:
   replicas: 3
   revisionHistoryLimit: 3
   progressDeadlineSeconds: 300
+
   selector:
     matchLabels:
       app: backend
+
   template:
     metadata:
       labels:
@@ -22,13 +24,11 @@ spec:
           ports:
             - containerPort: 8080
               name: http
-          
-          # All ConfigMap keys as environment variables
+
           envFrom:
             - configMapRef:
                 name: banking-config
-          
-          # Secrets explicitly defined from Key Vault
+
           env:
             - name: DB_USERNAME
               valueFrom:
@@ -45,8 +45,7 @@ spec:
                 secretKeyRef:
                   name: app-secrets
                   key: JWT_SECRET
-          
-          # Spring Boot Actuator health checks
+
           livenessProbe:
             httpGet:
               path: /actuator/health/liveness
@@ -55,7 +54,7 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
-          
+
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
@@ -64,7 +63,7 @@ spec:
             periodSeconds: 5
             timeoutSeconds: 3
             failureThreshold: 3
-          
+
           resources:
             requests:
               memory: "512Mi"
@@ -72,13 +71,12 @@ spec:
             limits:
               memory: "1Gi"
               cpu: "500m"
-          
-          # Mount secrets from Azure Key Vault via CSI driver
+
           volumeMounts:
             - name: secrets-store
               mountPath: "/mnt/secrets-store"
               readOnly: true
-      
+
       volumes:
         - name: secrets-store
           csi:
@@ -86,30 +84,30 @@ spec:
             readOnly: true
             volumeAttributes:
               secretProviderClass: azure-keyvault-secrets
-  
+
   strategy:
     canary:
-      # Auto-abort if pods fail to become ready
       progressDeadlineAbort: true
-      
-      # Services for traffic routing
       canaryService: backend-canary
       stableService: backend-stable
-      
-      # NGINX Ingress traffic routing
+
       trafficRouting:
-        nginx:
-          stableIngress: app-ingress
-          additionalIngressAnnotations:
-            canary-by-header: X-Canary
-      
-      # Canary rollout steps
+        plugins:
+          argoproj-labs/gatewayAPI:
+            httpRoutes:
+              - name: backend-route
+
       steps:
         - setWeight: 10
-        - pause: { duration: 2m }
+        - pause:
+            duration: 2m
         - setWeight: 25
-        - pause: { duration: 2m }
+        - pause:
+            duration: 2m
         - setWeight: 50
-        - pause: { duration: 5m }
+        - pause:
+            duration: 5m
         - setWeight: 75
-        - pause: { duration: 2m }
+        - pause:
+            duration: 2m
+        - setWeight: 100

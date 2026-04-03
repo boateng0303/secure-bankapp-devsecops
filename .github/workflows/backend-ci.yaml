@@ -104,15 +104,11 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Run tests
+      - name: Build and show dependencies
         working-directory: banking-app/banking-app-backend
         run: |
-          mvn -B test
-
-      - name: Build JAR
-        working-directory: banking-app/banking-app-backend
-        run: |
-          mvn -B package -DskipTests
+            mvn clean package
+            mvn dependency:tree
 
       - name: Upload JAR artifact
         uses: actions/upload-artifact@v4
