@@ -20,7 +20,7 @@ spec:
       serviceAccountName: default
       containers:
         - name: backend
-          image: bankingprod7frcnkacr.azurecr.io/banking-backend:508597f
+          image: bankingprod7frcnkacr.azurecr.io/banking-backend:da110e7
           ports:
             - containerPort: 8080
               name: http
