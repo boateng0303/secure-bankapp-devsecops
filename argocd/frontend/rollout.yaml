@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: bankingprod7frcnkacr.azurecr.io/banking-frontend:6a655e5
+          image: bankingprod7frcnkacr.azurecr.io/banking-frontend:e5f5061
           ports:
             - containerPort: 80
               name: http
