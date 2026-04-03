@@ -136,15 +136,13 @@ jobs:
             --username 00000000-0000-0000-0000-000000000000 \
             --password-stdin
 
-      - name: Set backend image tag
+      - name: Get backend image from rollout manifest
         shell: bash
         run: |
-          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-          IMAGE_REF="${{ vars.ACR_NAME }}.azurecr.io/banking-backend:${SHORT_SHA}"
+          IMAGE_REF=$(grep 'image:' argocd/backend/rollout.yaml | awk '{print $2}')
           echo "IMAGE_REF=$IMAGE_REF" >> $GITHUB_ENV
-          echo "Using image: $IMAGE_REF"
-          
-      
+          echo "Using image from manifest: $IMAGE_REF"
+
       - name: Pull Backend Image from ACR
         shell: bash
         run: |
@@ -223,6 +221,7 @@ jobs:
   trivy-frontend:
     name: Trivy - Frontend Container
     runs-on: ubuntu-latest
+    needs: [trivy-backend]
     if: ${{ github.event.inputs.scan_type == 'all' || github.event.inputs.scan_type == 'trivy' }}
 
     outputs:
@@ -259,14 +258,13 @@ jobs:
             --username 00000000-0000-0000-0000-000000000000 \
             --password-stdin
 
-      - name: Set frontend image tag
+      - name: Get frontend image from rollout manifest
         shell: bash
         run: |
-          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-          IMAGE_REF="${{ vars.ACR_NAME }}.azurecr.io/banking-frontend:${SHORT_SHA}"
+          IMAGE_REF=$(grep 'image:' argocd/frontend/rollout.yaml | awk '{print $2}')
           echo "IMAGE_REF=$IMAGE_REF" >> $GITHUB_ENV
-          echo "Using image: $IMAGE_REF"
-      
+          echo "Using image from manifest: $IMAGE_REF"
+
       - name: Pull Frontend Image from ACR
         shell: bash
         run: |
