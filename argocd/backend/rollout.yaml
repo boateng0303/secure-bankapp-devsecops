@@ -91,11 +91,11 @@ spec:
       canaryService: backend-canary
       stableService: backend-stable
 
-      trafficRouting:
-        plugins:
-          argoproj-labs/gatewayAPI:
-            httpRoutes:
-              - name: backend-route
+      # trafficRouting:
+      #   plugins:
+      #     argoproj-labs/gatewayAPI:
+      #       httpRoutes:
+      #         - name: backend-route
 
       steps:
         - setWeight: 10

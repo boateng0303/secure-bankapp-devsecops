@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argocd-server
+  namespace: argocd
+spec:
+  template:
+    spec:
+      volumes:
+        - name: extensions
+          emptyDir: {}
+      initContainers:
+        - name: rollout-extension
+          image: quay.io/argoprojlabs/argocd-extension-installer:v0.0.8
+          env:
+            - name: EXTENSION_URL
+              value: https://github.com/argoproj-labs/rollout-extension/releases/download/v0.3.7/extension.tar
+          volumeMounts:
+            - name: extensions
+              mountPath: /tmp/extensions
+      containers:
+        - name: argocd-server
+          volumeMounts:
+            - name: extensions
+              mountPath: /tmp/extensions
