@@ -14,7 +14,7 @@ data:
   LOGGING_LEVEL_ROOT: "INFO"
   LOGGING_LEVEL_COM_BANKING: "DEBUG"
   
-  DB_HOST: "jdbc:mysql://bankingg-prod-mysql.mysql.database.azure.com:3306/banking_db?useSSL=true&requireSSL=true"
+  DB_HOST: "kwasi-prod.mysql.database.azure.com"
   DB_PORT: "3306"
   DB_NAME: "banking_db"
   DB_POOL_SIZE: "10"
