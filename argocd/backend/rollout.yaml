@@ -4,8 +4,8 @@ metadata:
   name: backend
   namespace: banking
 spec:
-  replicas: 3
-  revisionHistoryLimit: 3
+  replicas: 2
+  revisionHistoryLimit: 2
   progressDeadlineSeconds: 300
 
   selector:
