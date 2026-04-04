@@ -93,7 +93,6 @@ spec:
 
   strategy:
     canary:
-      progressDeadlineAbort: true
       canaryService: backend-canary
       stableService: backend-stable
 
