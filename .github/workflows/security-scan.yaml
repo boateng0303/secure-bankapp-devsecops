@@ -57,10 +57,12 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_BACKEND }}
         run: |
-          mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+          mvn -B clean verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
             -Dsonar.projectKey=boateng0303_secure-bankapp-backend \
-            -Dsonar.organization=boateng0303
+            -Dsonar.organization=boateng0303 \
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
 
+  
   sonarcloud-frontend:
     name: SonarCloud - Frontend
     runs-on: ubuntu-latest
@@ -79,10 +81,12 @@ jobs:
           cache: yarn
           cache-dependency-path: banking-app/banking-app-frontend/yarn.lock
 
+     
       - name: Install dependencies
         working-directory: banking-app/banking-app-frontend
         run: yarn install --frozen-lockfile
 
+      
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@v6
         env:
@@ -93,6 +97,7 @@ jobs:
             -Dsonar.projectKey=boateng0303_secure-bankapp-frontend
             -Dsonar.organization=boateng0303
             -Dsonar.sources=src
+            -Dsonar.javascript.lcov.reportPaths=coverage/banking-frontend/lcov.info
 
   # ============================================
   # Trivy Scan - Pull from ACR and Scan

@@ -107,7 +107,7 @@ jobs:
       - name: Build and show dependencies
         working-directory: banking-app/banking-app-backend
         run: |
-            mvn clean package
+            mvn clean verify
             mvn dependency:tree
 
       - name: Upload JAR artifact
