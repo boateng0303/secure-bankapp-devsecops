@@ -52,12 +52,28 @@ jobs:
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
 
+
+      - name: Build backend and generate coverage
+        working-directory: banking-app/banking-app-backend
+        run: |
+          mvn -B clean verify
+
+      
+      
+      - name: Verify backend test and coverage artifacts
+        working-directory: banking-app/banking-app-backend
+        run: |
+          ls target
+          ls target/surefire-reports
+          ls target/site/jacoco
+          test -f target/site/jacoco/jacoco.xml
+
       - name: Build and analyze with SonarCloud
         working-directory: banking-app/banking-app-backend
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_BACKEND }}
         run: |
-          mvn -B clean verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+          mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
             -Dsonar.projectKey=boateng0303_secure-bankapp-backend \
             -Dsonar.organization=boateng0303 \
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
@@ -94,7 +110,10 @@ jobs:
         run: |
           ls coverage/banking-frontend
           test -f coverage/banking-frontend/lcov.info
+          cat coverage/banking-frontend/lcov.info | head -20
 
+      
+      
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@v6
         env:
