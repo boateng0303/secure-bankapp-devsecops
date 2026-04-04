@@ -125,6 +125,28 @@ class AuthServiceTest {
     }
 
     @Test
+    void register_shouldRegenerateAccountNumberWhenGeneratedNumberAlreadyExists() {
+        when(userService.existsByEmail(registerRequest.getEmail())).thenReturn(false);
+        when(userService.existsByPhoneNumber(registerRequest.getPhoneNumber())).thenReturn(false);
+        when(passwordEncoder.encode(registerRequest.getPassword())).thenReturn("encodedPassword");
+        when(userService.saveUser(any(User.class))).thenReturn(savedUser);
+        when(jwtService.generateToken(savedUser)).thenReturn("jwt-token");
+
+        when(accountService.existsByAccountNumber(anyString()))
+                .thenReturn(true)
+                .thenReturn(false);
+
+        AuthResponse response = authService.register(registerRequest);
+
+        assertNotNull(response);
+        assertEquals("jwt-token", response.getToken());
+        assertEquals(savedUser.getId(), response.getUserId());
+
+        verify(accountService, atLeast(2)).existsByAccountNumber(anyString());
+        verify(accountService).saveAccount(any(Account.class));
+    }
+
+    @Test
     void register_shouldThrowExceptionWhenEmailAlreadyExists() {
         when(userService.existsByEmail(registerRequest.getEmail())).thenReturn(true);
 

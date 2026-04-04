@@ -74,19 +74,27 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Node.js ${{ env.NODE_VERSION }}
+      - name: Set up Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: 20
           cache: yarn
           cache-dependency-path: banking-app/banking-app-frontend/yarn.lock
 
-     
       - name: Install dependencies
         working-directory: banking-app/banking-app-frontend
         run: yarn install --frozen-lockfile
 
-      
+      - name: Run frontend tests with coverage
+        working-directory: banking-app/banking-app-frontend
+        run: yarn ng test banking-frontend
+
+      - name: Verify coverage file exists
+        working-directory: banking-app/banking-app-frontend
+        run: |
+          ls coverage/banking-frontend
+          test -f coverage/banking-frontend/lcov.info
+
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@v6
         env:
